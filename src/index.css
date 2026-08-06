@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0a0a0a;
+  --color-bg-soft: #0d0d0d;
+  --color-surface: #141413;
+  --color-surface-2: #1c1c1a;
+  --color-white: #f5f4ef;
+  --color-muted: #95928a;
+  --color-muted-2: #605e58;
+  --color-orange-brand: #f2603e;
+  --color-[#f2603e]: #f2603e;
+
+  --font-chakra: 'Chakra Petch', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  --bg: #0a0a0a;
+  --bg-soft: #0d0d0d;
+  --surface: #141413;
+  --surface-2: #1c1c1a;
+  --line: rgba(245, 244, 240, 0.09);
+  --line-strong: rgba(245, 244, 240, 0.16);
+  --white: #f5f4ef;
+  --muted: #95928a;
+  --muted-2: #605e58;
+  --orange: #f2603e;
+  --orange-dark: #c8492b;
+  --orange-glow: rgba(242, 96, 62, 0.28);
+  --cut: 22px;
+  --cut-sm: 10px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--orange);
+  color: #0a0a0a;
+}
+
+h1, h2, h3, .display {
+  font-family: 'Chakra Petch', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Chamfer utility classes */
+.cut {
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
+}
+
+.cut-rev {
+  clip-path: polygon(var(--cut) 0, 100% 0, 100% 100%, 0 100%, 0 var(--cut));
+}
+
+.cut-sm {
+  clip-path: polygon(0 0, calc(100% - var(--cut-sm)) 0, 100% var(--cut-sm), 100% 100%, 0 100%);
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-14px); }
+}
+
+.animate-float-1 {
+  animation: float 7s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float 7s ease-in-out infinite;
+  animation-delay: -3.5s;
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: scroll-left 26s linear infinite;
+}
+
+/* Scroll reveal utility */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
