@@ -30,12 +30,12 @@ export default function Hero() {
       {/* Main Container */}
       <div className="max-w-[1240px] mx-auto px-6 sm:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
+
           {/* Left Column: Hero Copy & Actions */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2.5 text-xs text-[#f2603e] font-mono uppercase tracking-widest bg-[#141413] px-3.5 py-1.5 border border-[#f2603e]/30 cut-sm">
               <span className="w-4 h-[1px] bg-[#f2603e]" />
-              // EST. SRI LANKA · DIGITAL STUDIO
+              NUMBER ONE. DIGITAL STUDIO
             </div>
 
             <h1 className="font-chakra font-bold text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-[#f5f4ef] leading-[1.08]">
@@ -80,12 +80,12 @@ export default function Hero() {
           </div>
 
           {/* Right Column: Balanced Hero Banner Image Showcase */}
-          <div className="lg:col-span-5 flex flex-col items-center justify-center">
+          <div className="lg:col-span-6 flex flex-col items-center justify-center">
             <div
               ref={visualRef}
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
-              className="relative w-full max-w-[540px] cursor-pointer perspective-1000 group"
+              className="relative w-full max-w-[620px] cursor-pointer perspective-1000 group"
             >
               {/* Corner Plus Markers */}
               <span className="absolute -top-6 left-0 font-mono text-[11px] text-[#605e58] tracking-widest uppercase">
@@ -100,12 +100,12 @@ export default function Hero() {
                 style={{ transform: transformStyle, transition: 'transform 0.15s ease-out' }}
                 className="relative w-full cut p-[2px] bg-gradient-to-br from-[#f2603e]/60 via-white/15 to-[#f2603e]/30 shadow-2xl shadow-[#f2603e]/20"
               >
-                <div className="w-full bg-[#0d0d0d] cut overflow-hidden relative">
-                  {/* Hero Banner Image - 100% visible, natural aspect ratio, uncropped */}
+                <div className="w-full aspect-[3/2] bg-[#0d0d0d] cut overflow-hidden relative">
+                  {/* Hero Banner Image - fitted to aspect ratio, uncropped details preserved on right */}
                   <img
                     src="/images/hero.png"
                     alt="bizparkstudio - Where Businesses Grow Smarter"
-                    className="w-full h-auto object-contain block group-hover:scale-[1.02] transition-transform duration-500"
+                    className="absolute inset-0 w-full h-full object-cover object-right block group-hover:scale-[1.02] transition-transform duration-500"
                     onError={(e) => {
                       // Fallback to hero.jpeg if hero.png is missing
                       e.target.src = '/images/hero.jpeg';
@@ -113,7 +113,7 @@ export default function Hero() {
                   />
 
                   {/* Glassmorphism Badge Bar */}
-                  <div className="p-3 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-between font-mono text-[11px]">
+                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-between font-mono text-[11px] z-10">
                     <span className="text-[#f2603e] font-bold tracking-wider flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#f2603e] animate-ping" />
                       WHERE BUSINESSES GROW SMARTER

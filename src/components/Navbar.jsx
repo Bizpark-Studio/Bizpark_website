@@ -40,7 +40,7 @@ export default function Navbar() {
             }}
             className="flex items-center gap-3 group"
           >
-            <div className="w-8 h-8 flex-shrink-0 relative overflow-hidden rounded">
+            <div className="w-11 sm:w-12 h-11 sm:h-12 flex-shrink-0 relative overflow-hidden rounded">
               <img
                 src={logoImg}
                 alt="bizparkstudio logo"
@@ -51,7 +51,7 @@ export default function Navbar() {
                   e.target.nextElementSibling.style.display = 'block';
                 }}
               />
-              <svg className="w-8 h-8 hidden" viewBox="0 0 100 100" fill="none">
+              <svg className="w-11 sm:w-12 h-11 sm:h-12 hidden" viewBox="0 0 100 100" fill="none">
                 <path d="M50 6 L94 44 L60 74 L60 44 L36 64 L36 90 L6 64 Z" fill="#F2603E" />
                 <path d="M50 26 L74 44 L36 90 L36 64 L60 44 Z" fill="#F5F4EF" />
                 <path d="M50 62 L60 74 L60 90 L50 82 Z" fill="#0a0a0a" />
