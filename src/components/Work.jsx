@@ -204,7 +204,7 @@ export default function Work() {
 
                 {/* Category Tag */}
                 <div className="absolute top-6 left-6 z-20 flex items-center gap-2">
-                  <span className="font-mono text-[11px] text-[#f2603e] bg-[#0a0a0a]/85 backdrop-blur-md px-3 py-1 border border-[#f2603e]/30 tracking-wider">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-[#f2603e] bg-[#0a0a0a]/95 backdrop-blur-md px-4 py-2 border border-[#f2603e]/45 tracking-wider">
                     {catGroup.tag} ({currentProjIndex + 1}/{catGroup.projects.length})
                   </span>
                 </div>
