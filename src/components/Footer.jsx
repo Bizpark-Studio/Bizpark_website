@@ -1,10 +1,14 @@
 import React from 'react';
 const logoImg = '/images/logo.png';
 
-export default function Footer() {
+export default function Footer({ currentPage }) {
   const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (currentPage !== 'home') {
+      window.location.hash = `#${id}`;
+    } else {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -136,6 +140,13 @@ export default function Footer() {
               >
                 Process
               </a>
+              <a
+                href="#products"
+                onClick={(e) => { e.preventDefault(); scrollTo('products'); }}
+                className="block text-sm text-[#95928a] hover:text-[#f2603e] transition-colors"
+              >
+                Products
+              </a>
             </div>
 
             {/* Services links */}
@@ -172,10 +183,10 @@ export default function Footer() {
                 Contact
               </h5>
               <a
-                href="mailto:hello@bizparkstudio.com"
+                href="mailto:bizparkstudio@gmail.com"
                 className="block text-sm text-[#95928a] hover:text-[#f2603e] transition-colors"
               >
-                hello@bizparkstudio.com
+                bizparkstudio@gmail.com
               </a>
               <a
                 href="tel:+94000000000"
