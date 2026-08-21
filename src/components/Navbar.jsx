@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 const logoImg = '/images/logo.png';
 
-export default function Navbar() {
+export default function Navbar({ currentPage }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -15,9 +15,13 @@ export default function Navbar() {
 
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (currentPage !== 'home') {
+      window.location.hash = `#${id}`;
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -86,6 +90,13 @@ export default function Navbar() {
               Work
             </a>
             <a
+              href="#products"
+              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              className="hover:text-white transition-colors duration-200"
+            >
+              Products
+            </a>
+            <a
               href="#requirement-form"
               onClick={(e) => { e.preventDefault(); scrollToSection('requirement-form'); }}
               className="hover:text-[#f2603e] transition-colors duration-200"
@@ -150,6 +161,13 @@ export default function Navbar() {
               className="text-[#95928a] hover:text-white py-1 font-medium"
             >
               Work
+            </a>
+            <a
+              href="#products"
+              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              className="text-[#95928a] hover:text-white py-1 font-medium"
+            >
+              Products
             </a>
             <a
               href="#requirement-form"

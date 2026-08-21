@@ -1,144 +1,145 @@
 import React, { useState, useEffect } from 'react';
 import heroBannerImg from '../assets/hero-banner.jpg';
 
+// Category-wise Projects Data
+export const categoriesData = [
+  {
+    category: 'Web App',
+    tag: 'Web App',
+    projects: [
+      {
+        id: 'web-1',
+        name: 'OmniDesk Platform',
+        client: 'Enterprise SaaS Client',
+        type: 'Custom SaaS platform build',
+        image: '/images/hero.png',
+        description: 'Built a high-performance web dashboard handling real-time data streaming, automated user onboarding, role-based OAuth permissions, and microservice API integrations.',
+        features: ['React & Next.js Architecture', 'Real-time Telemetry Dashboard', 'Role-Based Access Control', 'Automated Workflow Pipelines'],
+      },
+      {
+        id: 'web-2',
+        name: 'CloudDash Enterprise',
+        client: 'Cloud Logistics Corp',
+        type: 'Resource Monitoring System',
+        image: heroBannerImg,
+        description: 'Engineered an interactive cloud infrastructure monitoring platform with automated server metrics, predictive usage graphs, and real-time incident alerting.',
+        features: ['Interactive Analytics Charts', 'Automated Incident Alerts', 'Custom Billing Integrations', 'Multi-tenant Support'],
+      },
+      {
+        id: 'web-3',
+        name: 'PortalX Management',
+        client: 'Fintech Operations',
+        type: 'Internal ERP & Workflow Tool',
+        image: '/images/hero.png',
+        description: 'Designed and deployed an internal operational workflow tool that streamlined team document approvals, task management pipelines, and audit logs.',
+        features: ['Approval Automation', 'Audit Logging System', 'Slack & Email Webhooks', 'Secure Data Vault'],
+      },
+    ],
+  },
+  {
+    category: 'Brand Identity',
+    tag: 'Brand Identity',
+    projects: [
+      {
+        id: 'brand-1',
+        name: 'Vortex Capital',
+        client: 'Fintech Startup',
+        type: 'Logo & visual system',
+        image: heroBannerImg,
+        description: 'Designed an authoritative brand identity, modern typography system, dark-mode design tokens, stationary suite, and digital asset guidelines.',
+        features: ['Primary Logomark & Monogram', 'Comprehensive Brand Guidelines', 'UI Component Design System', 'Digital & Print Assets'],
+      },
+      {
+        id: 'brand-2',
+        name: 'Helix BioBrand',
+        client: 'HealthTech Company',
+        type: 'Rebrand & Visual Architecture',
+        image: '/images/hero.png',
+        description: 'Crafted a clean futuristic visual identity for a biotechnology firm, including custom iconography, pitch deck assets, and 3D brand collateral.',
+        features: ['Futuristic Logotype', 'Custom Iconography Set', 'Investor Deck Template', 'Social Media Templates'],
+      },
+      {
+        id: 'brand-3',
+        name: 'Lumina Studios',
+        client: 'Creative Collective',
+        type: 'Brand Identity & Packaging',
+        image: heroBannerImg,
+        description: 'Created a luxury dark-mode brand system featuring embossed foil stationery, bespoke typography, and premium merchandise packaging.',
+        features: ['Premium Packaging System', 'Custom Serif Typography', 'Brand Guidelines Handbook', 'Physical Collateral Suite'],
+      },
+    ],
+  },
+  {
+    category: 'Campaign',
+    tag: 'Campaign',
+    projects: [
+      {
+        id: 'mkt-1',
+        name: 'Apex Growth',
+        client: 'E-commerce Brand',
+        type: 'Social media & paid ads',
+        image: '/images/hero.png',
+        description: 'Scaled social media reach by 340% through targeted Meta & TikTok creative ad campaigns, short-form video motion design, and high-converting funnel strategy.',
+        features: ['Meta & TikTok Paid Ads', 'Short-form Video Motion Creatives', 'Funnel Conversion Optimization', 'Monthly Analytics Reporting'],
+      },
+      {
+        id: 'mkt-2',
+        name: 'Momentum Product Launch',
+        client: 'Consumer Tech Brand',
+        type: 'Omnichannel Launch Campaign',
+        image: heroBannerImg,
+        description: 'Executed an omnichannel product launch strategy combining influencer partnerships, paid ad funnels, and email sequence automation resulting in 4.2x ROAS.',
+        features: ['Omnichannel Ad Funnels', 'Influencer Partner Management', 'Automated Email Sequences', '4.2x ROAS Achievement'],
+      },
+      {
+        id: 'mkt-3',
+        name: 'Elevate Brand Growth',
+        client: 'B2B SaaS Firm',
+        type: 'Social Content & Lead Generation',
+        type: 'Social Content & Lead Generation',
+        image: '/images/hero.png',
+        description: 'Developed an organic & paid LinkedIn growth strategy that doubled inbound qualified leads in 90 days with thought-leadership content graphics.',
+        features: ['LinkedIn Lead Generation', 'Executive Thought-Leadership', 'Custom Infographic Graphics', 'Retargeting Funnel'],
+      },
+    ],
+  },
+  {
+    category: 'E-commerce',
+    tag: 'E-commerce',
+    projects: [
+      {
+        id: 'ecom-1',
+        name: 'Aura Lifestyle',
+        client: 'Retail Lifestyle Brand',
+        type: 'Store build & launch',
+        image: heroBannerImg,
+        description: 'Engineered a lightning-fast custom headless Shopify store with bespoke product configurators, localized payment gateways, and optimized checkout flows.',
+        features: ['Headless Shopify Storefront', 'Custom Product Configurator', 'Localized Payment Integration', '99.8 Lighthouse Score'],
+      },
+      {
+        id: 'ecom-2',
+        name: 'Zenith Apparel',
+        client: 'Direct-to-Consumer Fashion',
+        type: 'Custom Fashion Store',
+        image: '/images/hero.png',
+        description: 'Built a visually immersive apparel store featuring interactive lookbooks, instant size recommendations, and seamless slide-out cart drawers.',
+        features: ['Interactive Lookbook View', 'Size Recommendation Tool', 'Slide-Out Cart Drawer', 'Multi-currency Checkout'],
+      },
+      {
+        id: 'ecom-3',
+        name: 'Nova Luxe Goods',
+        client: 'Luxury Accessories',
+        type: 'Storefront & Post-Purchase Funnel',
+        image: heroBannerImg,
+        description: 'Designed a high-converting luxury store with post-purchase upsell offers, automated SMS shipping updates, and VIP membership perks.',
+        features: ['Post-Purchase Upsell Integration', 'VIP Membership System', 'Automated SMS Updates', 'High Conversion Checkout'],
+      },
+    ],
+  },
+];
+
 export default function Work() {
   const [selectedProject, setSelectedProject] = useState(null);
-
-  // Category-wise Projects Data
-  const categoriesData = [
-    {
-      category: 'Web App',
-      tag: 'Web App',
-      projects: [
-        {
-          id: 'web-1',
-          name: 'OmniDesk Platform',
-          client: 'Enterprise SaaS Client',
-          type: 'Custom SaaS platform build',
-          image: '/images/hero.png',
-          description: 'Built a high-performance web dashboard handling real-time data streaming, automated user onboarding, role-based OAuth permissions, and microservice API integrations.',
-          features: ['React & Next.js Architecture', 'Real-time Telemetry Dashboard', 'Role-Based Access Control', 'Automated Workflow Pipelines'],
-        },
-        {
-          id: 'web-2',
-          name: 'CloudDash Enterprise',
-          client: 'Cloud Logistics Corp',
-          type: 'Resource Monitoring System',
-          image: heroBannerImg,
-          description: 'Engineered an interactive cloud infrastructure monitoring platform with automated server metrics, predictive usage graphs, and real-time incident alerting.',
-          features: ['Interactive Analytics Charts', 'Automated Incident Alerts', 'Custom Billing Integrations', 'Multi-tenant Support'],
-        },
-        {
-          id: 'web-3',
-          name: 'PortalX Management',
-          client: 'Fintech Operations',
-          type: 'Internal ERP & Workflow Tool',
-          image: '/images/hero.png',
-          description: 'Designed and deployed an internal operational workflow tool that streamlined team document approvals, task management pipelines, and audit logs.',
-          features: ['Approval Automation', 'Audit Logging System', 'Slack & Email Webhooks', 'Secure Data Vault'],
-        },
-      ],
-    },
-    {
-      category: 'Brand Identity',
-      tag: 'Brand Identity',
-      projects: [
-        {
-          id: 'brand-1',
-          name: 'Vortex Capital',
-          client: 'Fintech Startup',
-          type: 'Logo & visual system',
-          image: heroBannerImg,
-          description: 'Designed an authoritative brand identity, modern typography system, dark-mode design tokens, stationary suite, and digital asset guidelines.',
-          features: ['Primary Logomark & Monogram', 'Comprehensive Brand Guidelines', 'UI Component Design System', 'Digital & Print Assets'],
-        },
-        {
-          id: 'brand-2',
-          name: 'Helix BioBrand',
-          client: 'HealthTech Company',
-          type: 'Rebrand & Visual Architecture',
-          image: '/images/hero.png',
-          description: 'Crafted a clean futuristic visual identity for a biotechnology firm, including custom iconography, pitch deck assets, and 3D brand collateral.',
-          features: ['Futuristic Logotype', 'Custom Iconography Set', 'Investor Deck Template', 'Social Media Templates'],
-        },
-        {
-          id: 'brand-3',
-          name: 'Lumina Studios',
-          client: 'Creative Collective',
-          type: 'Brand Identity & Packaging',
-          image: heroBannerImg,
-          description: 'Created a luxury dark-mode brand system featuring embossed foil stationery, bespoke typography, and premium merchandise packaging.',
-          features: ['Premium Packaging System', 'Custom Serif Typography', 'Brand Guidelines Handbook', 'Physical Collateral Suite'],
-        },
-      ],
-    },
-    {
-      category: 'Campaign',
-      tag: 'Campaign',
-      projects: [
-        {
-          id: 'mkt-1',
-          name: 'Apex Growth',
-          client: 'E-commerce Brand',
-          type: 'Social media & paid ads',
-          image: '/images/hero.png',
-          description: 'Scaled social media reach by 340% through targeted Meta & TikTok creative ad campaigns, short-form video motion design, and high-converting funnel strategy.',
-          features: ['Meta & TikTok Paid Ads', 'Short-form Video Motion Creatives', 'Funnel Conversion Optimization', 'Monthly Analytics Reporting'],
-        },
-        {
-          id: 'mkt-2',
-          name: 'Momentum Product Launch',
-          client: 'Consumer Tech Brand',
-          type: 'Omnichannel Launch Campaign',
-          image: heroBannerImg,
-          description: 'Executed an omnichannel product launch strategy combining influencer partnerships, paid ad funnels, and email sequence automation resulting in 4.2x ROAS.',
-          features: ['Omnichannel Ad Funnels', 'Influencer Partner Management', 'Automated Email Sequences', '4.2x ROAS Achievement'],
-        },
-        {
-          id: 'mkt-3',
-          name: 'Elevate Brand Growth',
-          client: 'B2B SaaS Firm',
-          type: 'Social Content & Lead Generation',
-          image: '/images/hero.png',
-          description: 'Developed an organic & paid LinkedIn growth strategy that doubled inbound qualified leads in 90 days with thought-leadership content graphics.',
-          features: ['LinkedIn Lead Generation', 'Executive Thought-Leadership', 'Custom Infographic Graphics', 'Retargeting Funnel'],
-        },
-      ],
-    },
-    {
-      category: 'E-commerce',
-      tag: 'E-commerce',
-      projects: [
-        {
-          id: 'ecom-1',
-          name: 'Aura Lifestyle',
-          client: 'Retail Lifestyle Brand',
-          type: 'Store build & launch',
-          image: heroBannerImg,
-          description: 'Engineered a lightning-fast custom headless Shopify store with bespoke product configurators, localized payment gateways, and optimized checkout flows.',
-          features: ['Headless Shopify Storefront', 'Custom Product Configurator', 'Localized Payment Integration', '99.8 Lighthouse Score'],
-        },
-        {
-          id: 'ecom-2',
-          name: 'Zenith Apparel',
-          client: 'Direct-to-Consumer Fashion',
-          type: 'Custom Fashion Store',
-          image: '/images/hero.png',
-          description: 'Built a visually immersive apparel store featuring interactive lookbooks, instant size recommendations, and seamless slide-out cart drawers.',
-          features: ['Interactive Lookbook View', 'Size Recommendation Tool', 'Slide-Out Cart Drawer', 'Multi-currency Checkout'],
-        },
-        {
-          id: 'ecom-3',
-          name: 'Nova Luxe Goods',
-          client: 'Luxury Accessories',
-          type: 'Storefront & Post-Purchase Funnel',
-          image: heroBannerImg,
-          description: 'Designed a high-converting luxury store with post-purchase upsell offers, automated SMS shipping updates, and VIP membership perks.',
-          features: ['Post-Purchase Upsell Integration', 'VIP Membership System', 'Automated SMS Updates', 'High Conversion Checkout'],
-        },
-      ],
-    },
-  ];
 
   // State to track current slide index for each category card
   const [slideIndices, setSlideIndices] = useState({ 0: 0, 1: 0, 2: 0, 3: 0 });
@@ -314,6 +315,13 @@ export default function Work() {
                 className="bg-[#f2603e] text-[#0a0a0a] font-semibold text-xs uppercase tracking-wider px-6 py-3.5 cut-sm hover:bg-[#ff6f4a] transition-all"
               >
                 Discuss Similar Project →
+              </a>
+              <a
+                href={`#project-${selectedProject.id}`}
+                onClick={() => setSelectedProject(null)}
+                className="bg-transparent border border-white/20 text-[#f5f4ef] hover:border-[#f2603e] hover:text-[#f2603e] font-semibold text-xs uppercase tracking-wider px-6 py-3.5 cut-sm transition-all duration-200"
+              >
+                Read Case Study →
               </a>
             </div>
 

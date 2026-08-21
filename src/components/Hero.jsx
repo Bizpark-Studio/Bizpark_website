@@ -24,8 +24,8 @@ export default function Hero() {
   return (
     <section id="top" className="relative pt-36 md:pt-48 pb-24 md:pb-32 overflow-hidden bg-[#0a0a0a]">
       {/* Ambient background glow lighting */}
-      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 w-[550px] h-[350px] bg-[#f2603e]/15 blur-[140px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[400px] h-[300px] bg-[#f2603e]/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/3 left-1/4 -translate-x-1/2 w-[550px] h-[350px] bg-[#f2603e]/15 blur-[140px] rounded-full pointer-events-none z-0" />
+      <div className="absolute bottom-10 right-10 w-[400px] h-[300px] bg-[#f2603e]/10 blur-[120px] rounded-full pointer-events-none z-0" />
 
       {/* Main Container */}
       <div className="max-w-[1240px] mx-auto px-6 sm:px-8 relative z-10">
@@ -122,7 +122,6 @@ export default function Hero() {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
 

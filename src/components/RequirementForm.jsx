@@ -61,7 +61,7 @@ export default function RequirementForm() {
         },
         body: JSON.stringify({
           access_key: 'b149b071-700a-428a-[#f2603e]-demo-key', // Public Web3Forms / fallback key
-          to_email: 'hello@bizparkstudio.com',
+          to_email: 'bizparkstudio@gmail.com',
           from_name: formData.name,
           subject: `New Client Requirement from ${formData.name} (${formData.company || 'Direct Inquiry'})`,
           message: `
@@ -143,7 +143,7 @@ Sent from bizparkstudio website form.
                 ✓ Requirement Received!
               </h3>
               <p className="text-sm text-[#95928a] mt-1">
-                Thank you! Your project requirements have been submitted directly to <strong className="text-white">hello@bizparkstudio.com</strong>. We will review it and get back to you shortly.
+                Thank you! Your project requirements have been submitted directly to <strong className="text-white">bizparkstudio@gmail.com</strong>. We will review it and get back to you shortly.
               </p>
             </div>
             <button
@@ -335,7 +335,7 @@ Sent from bizparkstudio website form.
             </button>
 
             <p className="text-[11px] text-[#605e58] font-mono text-center">
-              Direct email delivery to hello@bizparkstudio.com · Guaranteed confidentiality
+              Direct email delivery to bizparkstudio@gmail.com · Guaranteed confidentiality
             </p>
 
           </div>
