@@ -1,8 +1,33 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { getStoreData } from '../data/store';
 
 export default function Hero() {
   const visualRef = useRef(null);
+  const [storeData, setStoreData] = useState(getStoreData());
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [transformStyle, setTransformStyle] = useState('rotate3d(0, 0, 0, 0deg) translate(0px, 0px)');
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setStoreData(getStoreData());
+    };
+    window.addEventListener('bizpark_store_updated', handleUpdate);
+    return () => window.removeEventListener('bizpark_store_updated', handleUpdate);
+  }, []);
+
+  const heroBanners = storeData.homepageHeroBanners || [];
+  const bannerCount = heroBanners.length;
+
+  // Auto-play sliding hero banners if > 1 banner
+  useEffect(() => {
+    if (bannerCount <= 1) return;
+    const timer = setInterval(() => {
+      setActiveSlideIndex((prev) => (prev + 1) % bannerCount);
+    }, 5500);
+    return () => clearInterval(timer);
+  }, [bannerCount]);
+
+  const currentBanner = heroBanners[activeSlideIndex] || heroBanners[0] || {};
 
   const handleMouseMove = (e) => {
     if (!visualRef.current) return;
@@ -16,9 +41,21 @@ export default function Hero() {
     setTransformStyle('rotate3d(0, 0, 0, 0deg) translate(0px, 0px)');
   };
 
-  const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const handleCtaClick = (link) => {
+    if (!link) return;
+    if (link.startsWith('#')) {
+      window.location.hash = link;
+      const id = link.slice(1);
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      window.open(link, '_blank');
+    }
+  };
+
+  const isVideo = (url) => {
+    if (!url) return false;
+    return url.includes('data:video') || /\.(mp4|webm|ogg|mov)$/i.test(url);
   };
 
   return (
@@ -33,53 +70,72 @@ export default function Hero() {
 
           {/* Left Column: Hero Copy & Actions */}
           <div className="lg:col-span-6 space-y-6">
-            <div className="inline-flex items-center gap-2.5 text-xs text-[#f2603e] font-mono uppercase tracking-widest bg-[#141413] px-3.5 py-1.5 border border-[#f2603e]/30 cut-sm">
+            <div className="inline-flex items-center gap-2.5 text-xs text-[#f2603e] font-mono uppercase tracking-widest bg-[#141413] px-3.5 py-1.5 border border-[#f2603e]/30 cut-sm font-bold">
               <span className="w-4 h-[1px] bg-[#f2603e]" />
-              NUMBER ONE. DIGITAL STUDIO
+              {currentBanner.badge || 'NUMBER ONE. DIGITAL STUDIO'}
             </div>
 
             <h1 className="font-chakra font-bold text-4xl sm:text-5xl lg:text-6xl uppercase tracking-tight text-[#f5f4ef] leading-[1.08]">
-              We build the<br />
-              digital side of<br />
-              <em className="not-italic text-[#f2603e] drop-shadow-[0_0_20px_rgba(242,96,62,0.4)]">your business.</em>
+              {currentBanner.title || 'We build the digital side of your business.'}
             </h1>
 
             <p className="text-[#95928a] text-base sm:text-lg max-w-xl leading-relaxed">
-              One studio, three disciplines — software development, social media marketing, and graphic design — run from a single plan, so nothing gets lost between teams.
+              {currentBanner.subtitle || 'One studio, three disciplines — software development, social media marketing, and graphic design — run from a single plan, so nothing gets lost between teams.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <button
-                onClick={() => scrollTo('requirement-form')}
-                className="btn-primary cut-sm inline-flex items-center gap-2.5 bg-[#f2603e] text-[#0a0a0a] font-semibold text-sm sm:text-base px-7 py-4 hover:bg-[#ff6f4a] transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-[#f2603e]/25"
+                onClick={() => handleCtaClick(currentBanner.ctaPrimaryLink || '#requirement-form')}
+                className="btn-primary cut-sm inline-flex items-center gap-2.5 bg-[#f2603e] text-[#0a0a0a] font-semibold text-sm sm:text-base px-7 py-4 hover:bg-[#ff6f4a] transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-[#f2603e]/25 font-chakra uppercase font-bold"
               >
-                Start a project →
+                {currentBanner.ctaPrimaryText || 'Start a project →'}
               </button>
 
               <button
-                onClick={() => scrollTo('work')}
-                className="btn-ghost cut-sm inline-flex items-center gap-2.5 bg-transparent border border-white/20 text-[#f5f4ef] font-semibold text-sm sm:text-base px-7 py-4 hover:border-[#f2603e] hover:text-[#f2603e] transition-all duration-200 hover:-translate-y-0.5"
+                onClick={() => handleCtaClick(currentBanner.ctaSecondaryLink || '#work')}
+                className="btn-ghost cut-sm inline-flex items-center gap-2.5 bg-transparent border border-white/20 text-[#f5f4ef] font-semibold text-sm sm:text-base px-7 py-4 hover:border-[#f2603e] hover:text-[#f2603e] transition-all duration-200 hover:-translate-y-0.5 font-chakra uppercase"
               >
-                See our work
+                {currentBanner.ctaSecondaryText || 'See our work'}
               </button>
             </div>
 
-            {/* Sub-tags */}
-            <div className="pt-4 flex flex-wrap items-center gap-4 font-mono text-xs text-[#95928a] border-t border-white/10">
-              <span className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#f2603e]" />
-                Branding
-              </span>
-              <span>•</span>
-              <span>Software</span>
-              <span>•</span>
-              <span>Marketing</span>
-              <span>•</span>
-              <span>Digital Solutions</span>
-            </div>
+            {/* Banner Slide Controls & Indicators */}
+            {bannerCount > 1 && (
+              <div className="pt-4 flex items-center gap-4 border-t border-white/10 font-mono text-xs text-[#95928a]">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveSlideIndex((prev) => (prev === 0 ? bannerCount - 1 : prev - 1))}
+                    className="w-8 h-8 rounded-full bg-[#141413] border border-white/20 text-white hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-[#f2603e] font-bold">
+                    0{activeSlideIndex + 1} / 0{bannerCount}
+                  </span>
+                  <button
+                    onClick={() => setActiveSlideIndex((prev) => (prev + 1) % bannerCount)}
+                    className="w-8 h-8 rounded-full bg-[#141413] border border-white/20 text-white hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                <div className="flex gap-1.5">
+                  {heroBanners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveSlideIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        activeSlideIndex === idx ? 'w-6 bg-[#f2603e]' : 'w-2 bg-white/30'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right Column: Balanced Hero Banner Image Showcase */}
+          {/* Right Column: Hero Banner Image Showcase */}
           <div className="lg:col-span-6 flex flex-col items-center justify-center">
             <div
               ref={visualRef}
@@ -89,37 +145,35 @@ export default function Hero() {
             >
               {/* Corner Plus Markers */}
               <span className="absolute -top-6 left-0 font-mono text-[11px] text-[#605e58] tracking-widest uppercase">
-                // SHOWCASE
+                // HOMEPAGE HERO
               </span>
               <span className="absolute -bottom-6 right-0 font-mono text-[11px] text-[#f2603e] tracking-widest uppercase">
                 BIZPARKSTUDIO
               </span>
 
-              {/* Glowing Framed Container displaying the full uncropped image */}
+              {/* Glowing Framed Container */}
               <div
                 style={{ transform: transformStyle, transition: 'transform 0.15s ease-out' }}
-                className="relative w-full cut p-[2px] bg-gradient-to-br from-[#f2603e]/60 via-white/15 to-[#f2603e]/30 shadow-2xl shadow-[#f2603e]/20"
+                className="bg-[#141413] border border-[#f2603e]/40 p-2 cut shadow-2xl shadow-[#f2603e]/10 group-hover:border-[#f2603e] transition-all duration-300 relative overflow-hidden"
               >
-                <div className="w-full aspect-[3/2] bg-[#0d0d0d] cut overflow-hidden relative">
-                  {/* Hero Banner Image - fitted to aspect ratio, uncropped details preserved on right */}
-                  <img
-                    src="/images/hero.png"
-                    alt="bizparkstudio - Where Businesses Grow Smarter"
-                    className="absolute inset-0 w-full h-full object-cover object-right block group-hover:scale-[1.02] transition-transform duration-500"
-                    onError={(e) => {
-                      // Fallback to hero.jpeg if hero.png is missing
-                      e.target.src = '/images/hero.jpeg';
-                    }}
-                  />
-
-                  {/* Glassmorphism Badge Bar */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3 bg-black/80 backdrop-blur-md border-t border-white/10 flex items-center justify-between font-mono text-[11px] z-10">
-                    <span className="text-[#f2603e] font-bold tracking-wider flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#f2603e] animate-ping" />
-                      WHERE BUSINESSES GROW SMARTER
-                    </span>
-                    <span className="text-[#95928a] hidden sm:inline">2026 EDITION</span>
-                  </div>
+                <div className="aspect-[16/10] w-full cut border border-white/10 overflow-hidden relative bg-black">
+                  {isVideo(currentBanner.image) ? (
+                    <video
+                      src={currentBanner.image}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={currentBanner.image || '/images/hero.png'}
+                      alt={currentBanner.title || 'Hero showcase'}
+                      className="w-full h-full object-cover object-center block"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/80 via-transparent to-transparent pointer-events-none" />
                 </div>
               </div>
             </div>

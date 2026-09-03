@@ -90,8 +90,12 @@ export default function Navbar({ currentPage }) {
               Work
             </a>
             <a
-              href="#products"
-              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              href="#category-software-solutions"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                window.location.hash = '#category-software-solutions';
+              }}
               className="hover:text-white transition-colors duration-200"
             >
               Products
@@ -163,8 +167,12 @@ export default function Navbar({ currentPage }) {
               Work
             </a>
             <a
-              href="#products"
-              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              href="#category-software-solutions"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                window.location.hash = '#category-software-solutions';
+              }}
               className="text-[#95928a] hover:text-white py-1 font-medium"
             >
               Products

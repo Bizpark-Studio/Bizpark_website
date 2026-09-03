@@ -141,8 +141,8 @@ export default function Footer({ currentPage }) {
                 Process
               </a>
               <a
-                href="#products"
-                onClick={(e) => { e.preventDefault(); scrollTo('products'); }}
+                href="#category-software-solutions"
+                onClick={(e) => { e.preventDefault(); window.location.hash = '#category-software-solutions'; }}
                 className="block text-sm text-[#95928a] hover:text-[#f2603e] transition-colors"
               >
                 Products
@@ -203,7 +203,13 @@ export default function Footer({ currentPage }) {
 
           {/* Footer Bottom */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-7 text-xs text-[#605e58]">
-            <span>© 2026 bizparkstudio. All rights reserved.</span>
+            <div className="flex items-center gap-3">
+              <span>© 2026 bizparkstudio. All rights reserved.</span>
+              <span>·</span>
+              <a href="#admin" className="text-[#605e58] hover:text-[#95928a] transition-colors font-mono text-[11px]">
+                Portal Login
+              </a>
+            </div>
             <div className="flex items-center gap-4 text-[#95928a]">
               <a href="#" aria-label="Instagram" className="hover:text-[#f2603e] transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
