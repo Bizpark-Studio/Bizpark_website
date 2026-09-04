@@ -23,12 +23,18 @@ const siteDataSchema = new mongoose.Schema(
       type: Array,
       default: []
     },
+    teamMembers: {
+      type: Array,
+      default: []
+    },
     settings: {
       type: Object,
       default: {
         adminEmail: 'bizparkstudio@gmail.com',
-        whatsappNumber: '+94770000000',
-        web3formsKey: ''
+        whatsappNumber: '0783157736',
+        phone: '0783157736',
+        address: 'Colombo, Sri Lanka',
+        web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5'
       }
     }
   },

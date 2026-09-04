@@ -99,34 +99,24 @@ export default function Hero() {
               </button>
             </div>
 
-            {/* Banner Slide Controls & Indicators */}
+            {/* Banner Slide Controls & Indicators (Clean Automatic Mode) */}
             {bannerCount > 1 && (
               <div className="pt-4 flex items-center gap-4 border-t border-white/10 font-mono text-xs text-[#95928a]">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActiveSlideIndex((prev) => (prev === 0 ? bannerCount - 1 : prev - 1))}
-                    className="w-8 h-8 rounded-full bg-[#141413] border border-white/20 text-white hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
-                  >
-                    ‹
-                  </button>
-                  <span className="text-[#f2603e] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#f2603e] animate-pulse" />
+                  <span className="text-[#f2603e] font-bold tracking-wider">
                     0{activeSlideIndex + 1} / 0{bannerCount}
                   </span>
-                  <button
-                    onClick={() => setActiveSlideIndex((prev) => (prev + 1) % bannerCount)}
-                    className="w-8 h-8 rounded-full bg-[#141413] border border-white/20 text-white hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
-                  >
-                    ›
-                  </button>
                 </div>
 
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 items-center">
                   {heroBanners.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setActiveSlideIndex(idx)}
+                      title={`Go to slide ${idx + 1}`}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
-                        activeSlideIndex === idx ? 'w-6 bg-[#f2603e]' : 'w-2 bg-white/30'
+                        activeSlideIndex === idx ? 'w-8 bg-[#f2603e]' : 'w-2 bg-white/25 hover:bg-white/50'
                       }`}
                     />
                   ))}

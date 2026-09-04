@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries } from '../data/store';
 
+const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
+
 export default function AdminPanel() {
   const [storeData, setStoreData] = useState(getStoreData());
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -12,22 +14,59 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState('');
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'herobanners' | 'homepage' | 'banners' | 'inquiries' | 'settings'
+  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'herobanners' | 'homepage' | 'banners' | 'team' | 'inquiries' | 'settings'
   const [selectedCategoryKey, setSelectedCategoryKey] = useState('branding');
   const [editingProject, setEditingProject] = useState(null);
   const [editingHeroBanner, setEditingHeroBanner] = useState(null);
   const [editingBanner, setEditingBanner] = useState(null);
+  const [editingTeamMember, setEditingTeamMember] = useState(null);
   const [saveNotification, setSaveNotification] = useState('');
   const [inquirySearch, setInquirySearch] = useState('');
   const [settingsState, setSettingsState] = useState(storeData.settings || {
     adminEmail: 'bizparkstudio@gmail.com',
-    whatsappNumber: '+94770000000',
-    web3formsKey: ''
+    whatsappNumber: '0783157736',
+    phone: '0783157736',
+    address: 'Colombo, Sri Lanka',
+    web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5'
   });
+  const [emailConfig, setEmailConfig] = useState(null);
+  const [testEmailStatus, setTestEmailStatus] = useState('');
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      fetch(`${BACKEND_URL}/api/email-config`)
+        .then((res) => res.json())
+        .then((data) => setEmailConfig(data))
+        .catch(() => {});
+    }
+  }, [activeTab]);
+
+  const handleSendTestEmail = async () => {
+    setIsSendingTestEmail(true);
+    setTestEmailStatus('Sending test email notification...');
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/test-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient: settingsState.adminEmail || 'bizparkstudio@gmail.com' })
+      });
+      const data = await res.json();
+      if (data.sent) {
+        setTestEmailStatus('✓ Test email dispatched successfully! Please check your inbox.');
+      } else {
+        setTestEmailStatus(`⚠️ Email not sent: ${data.reason || data.error || 'Check .env SMTP credentials'}`);
+      }
+    } catch {
+      setTestEmailStatus('❌ Error reaching backend Express server.');
+    } finally {
+      setIsSendingTestEmail(false);
+    }
+  };
 
   const triggerSaveNotification = (msg) => {
     setSaveNotification(msg);
@@ -57,13 +96,32 @@ export default function AdminPanel() {
     sessionStorage.removeItem('bizpark_admin_authed');
   };
 
-  // FILE UPLOAD HELPER FUNCTION (Image / Video file to Data URL)
-  const handleFileUpload = (file, callback) => {
+  // FILE UPLOAD HELPER — uploads to server /api/upload-image, falls back to base64
+  const handleFileUpload = async (file, callback) => {
     if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${BACKEND_URL}/api/upload-image`, {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.url) {
+          callback(data.url);
+          triggerSaveNotification('✓ Image uploaded to server successfully!');
+          return;
+        }
+      }
+    } catch {
+      // fall through to base64 fallback
+    }
+    // Fallback: convert to base64 data URL if server unreachable
     const reader = new FileReader();
     reader.onload = (e) => {
       callback(e.target.result);
-      triggerSaveNotification('Media file uploaded & converted!');
+      triggerSaveNotification('Image uploaded (local preview mode).');
     };
     reader.readAsDataURL(file);
   };
@@ -333,6 +391,49 @@ export default function AdminPanel() {
     }
   };
 
+  // TEAM MEMBERS HANDLERS
+  const openNewTeamMemberForm = () => {
+    setEditingTeamMember({
+      id: `team-${Date.now()}`,
+      name: '',
+      role: '',
+      image: '/images/hero.png',
+      bio: '',
+      email: 'bizparkstudio@gmail.com',
+      phone: '0783157736'
+    });
+  };
+
+  const handleSaveTeamMember = (e) => {
+    e.preventDefault();
+    if (!editingTeamMember.name.trim()) return;
+    const currentMembers = storeData.teamMembers || [];
+    const exists = currentMembers.some((m) => m.id === editingTeamMember.id);
+    const updatedMembers = exists
+      ? currentMembers.map((m) => (m.id === editingTeamMember.id ? editingTeamMember : m))
+      : [...currentMembers, editingTeamMember];
+
+    const updated = {
+      ...storeData,
+      teamMembers: updatedMembers
+    };
+    handleSaveAll(updated);
+    setEditingTeamMember(null);
+    triggerSaveNotification('✓ Team member saved & published to About page!');
+  };
+
+  const handleDeleteTeamMember = (id) => {
+    if (window.confirm('Are you sure you want to remove this team member from the About page?')) {
+      const updatedMembers = (storeData.teamMembers || []).filter((m) => m.id !== id);
+      const updated = {
+        ...storeData,
+        teamMembers: updatedMembers
+      };
+      handleSaveAll(updated);
+      triggerSaveNotification('Team member removed.');
+    }
+  };
+
   // SYSTEM SETTINGS & DATA BACKUP HANDLERS
   const handleSaveSettings = (e) => {
     e.preventDefault();
@@ -470,6 +571,21 @@ export default function AdminPanel() {
             4. Software Section Highlights
           </button>
           <button
+            onClick={() => { setActiveTab('team'); setEditingTeamMember(null); }}
+            className={`font-mono text-xs uppercase px-5 py-3 cut-sm transition-all font-bold flex items-center gap-2 ${
+              activeTab === 'team'
+                ? 'bg-[#f2603e] text-black shadow-lg shadow-[#f2603e]/20'
+                : 'bg-[#141413] text-[#95928a] hover:text-white border border-white/10'
+            }`}
+          >
+            <span>5. Team Members</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-sm font-mono ${
+              activeTab === 'team' ? 'bg-black text-[#f2603e]' : 'bg-[#f2603e] text-black font-bold'
+            }`}>
+              {(storeData.teamMembers || []).length}
+            </span>
+          </button>
+          <button
             onClick={() => { setActiveTab('inquiries'); setEditingProject(null); }}
             className={`font-mono text-xs uppercase px-5 py-3 cut-sm transition-all font-bold flex items-center gap-2 ${
               activeTab === 'inquiries'
@@ -477,7 +593,7 @@ export default function AdminPanel() {
                 : 'bg-[#141413] text-[#95928a] hover:text-white border border-white/10'
             }`}
           >
-            <span>5. Inquiries &amp; Leads</span>
+            <span>6. Inquiries &amp; Leads</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-sm font-mono ${
               activeTab === 'inquiries' ? 'bg-black text-[#f2603e]' : 'bg-[#f2603e] text-black font-bold'
             }`}>
@@ -492,7 +608,7 @@ export default function AdminPanel() {
                 : 'bg-[#141413] text-[#95928a] hover:text-white border border-white/10'
             }`}
           >
-            6. System Email &amp; Backup
+            7. System Email, Contact &amp; Backup
           </button>
         </div>
 
@@ -1659,7 +1775,262 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* TAB 6: SYSTEM EMAIL SETTINGS & DATA BACKUP */}
+        {/* TAB 5: TEAM MEMBERS MANAGEMENT */}
+        {activeTab === 'team' && (
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#141413] border border-white/10 p-6 cut shadow-2xl">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-1 font-bold">
+                  <span>👥</span>
+                  ABOUT PAGE TEAM ROSTER
+                </div>
+                <h3 className="font-chakra text-2xl text-white uppercase font-bold">
+                  Studio Team Members &amp; Specialists
+                </h3>
+                <p className="text-xs text-[#95928a] font-mono mt-1">
+                  Manage the specialists, roles, profile photos, and bios displayed on the public About page.
+                </p>
+              </div>
+              <button
+                onClick={openNewTeamMemberForm}
+                className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs uppercase px-6 py-3.5 cut-sm transition-all shadow-lg flex items-center gap-2 whitespace-nowrap self-start sm:self-auto"
+              >
+                <span>+</span>
+                <span>Add Team Member</span>
+              </button>
+            </div>
+
+            {/* Team Members Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(storeData.teamMembers || []).map((member) => (
+                <div
+                  key={member.id}
+                  className="bg-[#141413] border border-white/10 hover:border-[#f2603e]/60 cut p-6 space-y-4 flex flex-col justify-between transition-all"
+                >
+                  <div className="space-y-4">
+                    {/* Image Preview & Badges */}
+                    <div className="relative aspect-[4/3] w-full bg-[#0a0a0a] rounded overflow-hidden border border-white/10">
+                      <img
+                        src={member.image || '/images/hero.png'}
+                        alt={member.name}
+                        className="w-full h-full object-cover object-top"
+                        onError={(e) => { e.target.src = '/images/hero.png'; }}
+                      />
+                      <div className="absolute top-2 right-2 bg-black/80 px-2 py-0.5 text-[10px] font-mono text-[#f2603e] border border-white/10 cut-sm">
+                        {member.role ? member.role.split(' ')[0] : 'SPECIALIST'}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="font-mono text-xs text-[#f2603e] font-bold uppercase tracking-wider mb-1">
+                        {member.role || 'Role not specified'}
+                      </div>
+                      <h4 className="font-chakra text-xl font-bold text-white uppercase">
+                        {member.name}
+                      </h4>
+                      <p className="text-xs text-[#95928a] leading-relaxed mt-2 line-clamp-3">
+                        {member.bio || 'No bio description provided.'}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/10 space-y-1 text-xs font-mono text-[#95928a]">
+                      {member.email && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#605e58]">Email:</span>
+                          <span className="text-white truncate">{member.email}</span>
+                        </div>
+                      )}
+                      {member.phone && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#605e58]">Phone:</span>
+                          <span className="text-emerald-400 font-semibold">{member.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => setEditingTeamMember(member)}
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white font-chakra font-bold text-xs uppercase py-2.5 cut-sm transition-all text-center"
+                    >
+                      Edit Profile ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTeamMember(member.id)}
+                      className="px-3.5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-chakra font-bold text-xs uppercase cut-sm transition-all"
+                      title="Remove Member"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Edit / Add Team Member Modal */}
+            {editingTeamMember && (
+              <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-[#141413] border border-[#f2603e]/40 p-6 sm:p-8 cut max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn space-y-6">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div>
+                      <div className="font-mono text-xs text-[#f2603e] uppercase tracking-wider font-bold">
+                        // PROFILE EDITOR
+                      </div>
+                      <h3 className="font-chakra text-2xl font-bold text-white uppercase">
+                        {editingTeamMember.name ? `Edit: ${editingTeamMember.name}` : 'Add New Team Member'}
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setEditingTeamMember(null)}
+                      className="text-[#95928a] hover:text-white text-xl p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveTeamMember} className="space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                          Full Name <span className="text-[#f2603e]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTeamMember.name || ''}
+                          onChange={(e) => setEditingTeamMember({ ...editingTeamMember, name: e.target.value })}
+                          placeholder="e.g. Anuruddha Jayasanke"
+                          className="w-full bg-[#0a0a0a] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                          Role / Title <span className="text-[#f2603e]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editingTeamMember.role || ''}
+                          onChange={(e) => setEditingTeamMember({ ...editingTeamMember, role: e.target.value })}
+                          placeholder="e.g. Founder &amp; Lead Architect"
+                          className="w-full bg-[#0a0a0a] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Profile Image with File Upload + URL */}
+                    <div className="bg-[#0a0a0a] border border-white/10 p-4 cut-sm space-y-3">
+                      <label className="block font-mono text-xs text-[#f2603e] uppercase font-bold">
+                        Profile Photo
+                      </label>
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <div className="w-20 h-20 rounded bg-[#141413] border border-white/20 overflow-hidden flex-shrink-0">
+                          <img
+                            src={editingTeamMember.image || '/images/hero.png'}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = '/images/hero.png'; }}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-2 w-full">
+                          <div className="flex items-center gap-2">
+                            <label className="bg-white/10 hover:bg-[#f2603e] hover:text-black text-white text-xs font-chakra font-bold uppercase px-4 py-2.5 cut-sm cursor-pointer transition-all border border-white/20">
+                              <span>Choose Photo File 📁</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files && e.target.files[0];
+                                  if (file) {
+                                    handleFileUpload(file, (url) => {
+                                      setEditingTeamMember((prev) => ({ ...prev, image: url }));
+                                    });
+                                  }
+                                }}
+                              />
+                            </label>
+                            <span className="text-[11px] font-mono text-[#605e58]">
+                              Uploads directly to server
+                            </span>
+                          </div>
+                          <input
+                            type="text"
+                            value={editingTeamMember.image || ''}
+                            onChange={(e) => setEditingTeamMember({ ...editingTeamMember, image: e.target.value })}
+                            placeholder="Or paste direct image URL (e.g. /images/team1.jpg)"
+                            className="w-full bg-[#141413] border border-white/10 focus:border-[#f2603e] p-2.5 text-xs font-mono text-white outline-none cut-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bio */}
+                    <div>
+                      <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                        Professional Bio / Summary
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={editingTeamMember.bio || ''}
+                        onChange={(e) => setEditingTeamMember({ ...editingTeamMember, bio: e.target.value })}
+                        placeholder="Brief overview of background, specializations, and studio role..."
+                        className="w-full bg-[#0a0a0a] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-sans text-white outline-none cut-sm resize-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={editingTeamMember.email || ''}
+                          onChange={(e) => setEditingTeamMember({ ...editingTeamMember, email: e.target.value })}
+                          placeholder="e.g. member@bizparkstudio.com"
+                          className="w-full bg-[#0a0a0a] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                          WhatsApp / Mobile Number
+                        </label>
+                        <input
+                          type="text"
+                          value={editingTeamMember.phone || ''}
+                          onChange={(e) => setEditingTeamMember({ ...editingTeamMember, phone: e.target.value })}
+                          placeholder="e.g. 0783157736"
+                          className="w-full bg-[#0a0a0a] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setEditingTeamMember(null)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-chakra font-bold text-xs uppercase px-6 py-3 cut-sm transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs uppercase px-8 py-3 cut-sm transition-all shadow-lg"
+                      >
+                        Save Team Member →
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 7: SYSTEM EMAIL SETTINGS & DATA BACKUP */}
         {activeTab === 'settings' && (
           <div className="space-y-8">
             
@@ -1676,6 +2047,49 @@ export default function AdminPanel() {
                 <p className="text-xs text-[#95928a] font-mono mt-1">
                   Configure where incoming website client inquiries and project submissions get delivered.
                 </p>
+              </div>
+
+              {/* Live Dispatch Engine Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0a0a0a] border border-white/10 p-5 cut-sm font-mono text-xs">
+                <div className="space-y-2 border-b md:border-b-0 md:border-r border-white/10 pb-4 md:pb-0 md:pr-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold uppercase">1. Gmail / SMTP Engine:</span>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold cut-sm ${emailConfig?.emailPasswordConfigured ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'}`}>
+                      {emailConfig?.emailPasswordConfigured ? '✓ LIVE & CONNECTED' : '⚠️ APP PASSWORD PENDING'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#95928a] leading-relaxed">
+                    Sender: <span className="text-white">{emailConfig?.senderEmail || 'bizparkstudio@gmail.com'}</span><br />
+                    {emailConfig?.emailPasswordConfigured 
+                      ? 'Nodemailer will send high-priority HTML emails directly to your admin inbox on every new lead.'
+                      : 'To activate direct Gmail delivery, add your 16-character Google App Password to EMAIL_APP_PASSWORD in the .env file.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSendTestEmail}
+                    disabled={isSendingTestEmail}
+                    className="mt-2 bg-white/10 hover:bg-white/20 text-white text-[11px] font-chakra font-bold uppercase px-3.5 py-2 cut-sm border border-white/15 disabled:opacity-50 transition-all"
+                  >
+                    {isSendingTestEmail ? 'Sending Test...' : 'Send Test Lead Email ✉'}
+                  </button>
+                  {testEmailStatus && (
+                    <div className="text-[11px] font-mono text-[#f2603e] pt-1">
+                      {testEmailStatus}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-2 md:pt-0 md:pl-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-bold uppercase">2. Web3Forms Free Relay:</span>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold cut-sm ${settingsState.web3formsKey ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/10 text-[#888] border border-white/10'}`}>
+                      {settingsState.web3formsKey ? '✓ ACTIVE GATEWAY' : 'OPTIONAL BACKUP'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#95928a] leading-relaxed">
+                    Zero-password backup gateway. Forwards inquiries directly to your email without needing SMTP credentials or passwords.
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1709,6 +2123,38 @@ export default function AdminPanel() {
                   />
                   <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
                     Used for instant WhatsApp chat shortcuts across forms and cards.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">
+                    Studio Mobile / Telephone Hotline
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsState.phone || ''}
+                    onChange={(e) => setSettingsState({ ...settingsState, phone: e.target.value })}
+                    placeholder="0783157736"
+                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                  />
+                  <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
+                    Official phone number shown on the Contact page &amp; footer.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">
+                    Studio Physical Address / Base
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsState.address || ''}
+                    onChange={(e) => setSettingsState({ ...settingsState, address: e.target.value })}
+                    placeholder="Colombo, Sri Lanka"
+                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                  />
+                  <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
+                    Studio address shown on the Contact page and official communications.
                   </span>
                 </div>
               </div>

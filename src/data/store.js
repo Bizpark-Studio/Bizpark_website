@@ -467,10 +467,42 @@ export const initialSoftwareBanners = [
   }
 ];
 
+export const initialTeamMembers = [
+  {
+    id: 'team-1',
+    name: 'Anuruddha Jayasanke',
+    role: 'Founder & Lead Architect',
+    image: '/images/hero.png',
+    bio: 'Directing digital strategy, robust web architecture, and full-stack software development for modern enterprises.',
+    email: 'bizparkstudio@gmail.com',
+    phone: '0783157736'
+  },
+  {
+    id: 'team-2',
+    name: 'Kasun Bandara',
+    role: 'Head of Brand Identity & Art Direction',
+    image: '/images/hero.png',
+    bio: 'Crafting authoritative visual brand systems, packaging design, and high-impact typography.',
+    email: 'design@bizparkstudio.com',
+    phone: '0783157736'
+  },
+  {
+    id: 'team-3',
+    name: 'Nimesha Perera',
+    role: 'Head of Performance Marketing',
+    image: '/images/hero.png',
+    bio: 'Building data-backed acquisition funnels, social campaigns, and scalable conversion engines.',
+    email: 'marketing@bizparkstudio.com',
+    phone: '0783157736'
+  }
+];
+
 export const initialSettings = {
   adminEmail: 'bizparkstudio@gmail.com',
-  whatsappNumber: '+94770000000',
-  web3formsKey: ''
+  whatsappNumber: '0783157736',
+  phone: '0783157736',
+  address: 'Colombo, Sri Lanka',
+  web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5'
 };
 
 export const initialInquiries = [
@@ -498,8 +530,21 @@ export function getStoreData() {
         if (!parsed.homepageHeroBanners) {
           parsed.homepageHeroBanners = initialHomepageHeroBanners;
         }
+        if (!parsed.teamMembers || parsed.teamMembers.length === 0) {
+          parsed.teamMembers = initialTeamMembers;
+        }
         if (!parsed.settings) {
           parsed.settings = initialSettings;
+        } else {
+          if (!parsed.settings.whatsappNumber || parsed.settings.whatsappNumber === '+94770000000' || parsed.settings.whatsappNumber.includes('4986658')) {
+            parsed.settings.whatsappNumber = '0783157736';
+          }
+          if (!parsed.settings.phone) {
+            parsed.settings.phone = '0783157736';
+          }
+          if (!parsed.settings.address) {
+            parsed.settings.address = 'Colombo, Sri Lanka';
+          }
         }
         if (!parsed.inquiries) {
           parsed.inquiries = initialInquiries;
@@ -522,13 +567,14 @@ export function getStoreData() {
     homepageHeroBanners: initialHomepageHeroBanners,
     softwareBanners: initialSoftwareBanners,
     softwareProducts: defaultSoftware,
+    teamMembers: initialTeamMembers,
     settings: initialSettings,
     inquiries: initialInquiries
   };
 }
 
 // Background MongoDB sync helper
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
 
 export async function syncFromBackend() {
   try {
@@ -537,16 +583,26 @@ export async function syncFromBackend() {
       const remoteData = await res.json();
       if (remoteData && remoteData.categories && remoteData.categories.length > 0) {
         const local = getStoreData();
-        const merged = {
-          ...local,
-          categories: remoteData.categories,
-          homepageHeroBanners: remoteData.homepageHeroBanners || local.homepageHeroBanners,
-          softwareBanners: remoteData.softwareBanners || local.softwareBanners,
-          softwareProducts: remoteData.softwareProducts || local.softwareProducts,
-          settings: remoteData.settings || local.settings
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        window.dispatchEvent(new Event('bizpark_store_updated'));
+
+        // Only overwrite if remote data is newer OR there's no local data stored yet
+        const hasLocalData = !!localStorage.getItem(STORAGE_KEY);
+        const remoteTs = remoteData.updatedAt ? new Date(remoteData.updatedAt).getTime() : 0;
+        const localTs = local._savedAt ? new Date(local._savedAt).getTime() : 0;
+
+        // Use remote only if: no local data, or remote is definitively newer
+        if (!hasLocalData || (remoteTs > 0 && remoteTs > localTs)) {
+          const merged = {
+            ...local,
+            categories: remoteData.categories,
+            homepageHeroBanners: remoteData.homepageHeroBanners || local.homepageHeroBanners,
+            softwareBanners: remoteData.softwareBanners || local.softwareBanners,
+            softwareProducts: remoteData.softwareProducts || local.softwareProducts,
+            teamMembers: remoteData.teamMembers || local.teamMembers || initialTeamMembers,
+            settings: remoteData.settings || local.settings
+          };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          window.dispatchEvent(new Event('bizpark_store_updated'));
+        }
       }
     }
   } catch {
@@ -566,6 +622,8 @@ export function saveStoreData(data) {
     if (softwareCat && softwareCat.projects) {
       data.softwareProducts = softwareCat.projects;
     }
+    // Stamp save time for sync comparison
+    data._savedAt = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new Event('bizpark_store_updated'));
 
@@ -626,6 +684,7 @@ export function resetStoreData() {
     homepageHeroBanners: initialHomepageHeroBanners,
     softwareBanners: initialSoftwareBanners,
     softwareProducts: defaultSoftware,
+    teamMembers: initialTeamMembers,
     settings: initialSettings,
     inquiries: initialInquiries
   };

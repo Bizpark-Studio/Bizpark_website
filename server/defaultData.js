@@ -346,9 +346,40 @@ export const defaultSeedData = {
       ctaText: 'Discover EduLink →'
     }
   ],
+  teamMembers: [
+    {
+      id: 'team-1',
+      name: 'Anuruddha Jayasanke',
+      role: 'Founder & Lead Architect',
+      image: '/images/hero.png',
+      bio: 'Directing digital strategy, robust web architecture, and full-stack software development for modern enterprises.',
+      email: 'bizparkstudio@gmail.com',
+      phone: '0783157736'
+    },
+    {
+      id: 'team-2',
+      name: 'Kasun Bandara',
+      role: 'Head of Brand Identity & Art Direction',
+      image: '/images/hero.png',
+      bio: 'Crafting authoritative visual brand systems, packaging design, and high-impact typography.',
+      email: 'design@bizparkstudio.com',
+      phone: '0783157736'
+    },
+    {
+      id: 'team-3',
+      name: 'Nimesha Perera',
+      role: 'Head of Performance Marketing',
+      image: '/images/hero.png',
+      bio: 'Building data-backed acquisition funnels, social campaigns, and scalable conversion engines.',
+      email: 'marketing@bizparkstudio.com',
+      phone: '0783157736'
+    }
+  ],
   settings: {
     adminEmail: 'bizparkstudio@gmail.com',
-    whatsappNumber: '+94770000000',
-    web3formsKey: ''
+    whatsappNumber: '0783157736',
+    phone: '0783157736',
+    address: 'Colombo, Sri Lanka',
+    web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5'
   }
 };

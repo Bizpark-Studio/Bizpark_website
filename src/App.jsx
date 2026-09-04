@@ -10,6 +10,9 @@ import Footer from './components/Footer';
 import ProjectDetail from './components/ProjectDetail';
 import CategoryProjects from './components/CategoryProjects';
 import AdminPanel from './components/AdminPanel';
+import ContactPage from './components/ContactPage';
+import AboutPage from './components/AboutPage';
+import WhatsAppButton from './components/WhatsAppButton';
 
 export default function App() {
   const [route, setRoute] = useState({ page: 'home', id: null });
@@ -28,6 +31,12 @@ export default function App() {
       } else if (hash.startsWith('#category-')) {
         const id = hash.replace('#category-', '');
         setRoute({ page: 'category', id });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      } else if (hash === '#contact') {
+        setRoute({ page: 'contact', id: null });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      } else if (hash === '#about') {
+        setRoute({ page: 'about', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
       } else if (hash === '#admin') {
         setRoute({ page: 'admin', id: null });
@@ -102,9 +111,12 @@ export default function App() {
         {route.page === 'category' && <CategoryProjects categoryKey={route.id} />}
         {route.page === 'project' && <ProjectDetail projectId={route.id} />}
         {route.page === 'product' && <ProjectDetail projectId={route.id} />}
+        {route.page === 'contact' && <ContactPage />}
+        {route.page === 'about' && <AboutPage />}
         {route.page === 'admin' && <AdminPanel />}
       </main>
       <Footer currentPage={route.page} />
+      <WhatsAppButton />
     </div>
   );
 }

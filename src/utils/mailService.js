@@ -15,9 +15,11 @@ export async function submitInquiry(formData) {
   let deliveryMethod = 'vault_only'; // 'smtp' | 'web3forms' | 'vault_only'
   let dispatchNote = '';
 
+  const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
+
   // 2. Dispatch to Backend Express Server (Saves to MongoDB Atlas & sends SMTP email if configured)
   try {
-    const apiRes = await fetch('http://localhost:5000/api/inquiries', {
+    const apiRes = await fetch(`${BACKEND_URL}/api/inquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
