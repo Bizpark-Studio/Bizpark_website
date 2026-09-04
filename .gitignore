@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment Variables (Keep MongoDB credentials private)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development

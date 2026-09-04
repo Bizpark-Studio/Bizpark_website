@@ -15,6 +15,16 @@ export default function Navbar({ currentPage }) {
 
   const scrollToSection = (id) => {
     setMobileMenuOpen(false);
+    if (id === 'contact') {
+      window.location.hash = '#contact';
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+    if (id === 'about') {
+      window.location.hash = '#about';
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
     if (currentPage !== 'home') {
       window.location.hash = `#${id}`;
     } else {
@@ -90,8 +100,12 @@ export default function Navbar({ currentPage }) {
               Work
             </a>
             <a
-              href="#products"
-              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              href="#category-software-solutions"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                window.location.hash = '#category-software-solutions';
+              }}
               className="hover:text-white transition-colors duration-200"
             >
               Products
@@ -104,9 +118,16 @@ export default function Navbar({ currentPage }) {
               Submit Requirement
             </a>
             <a
+              href="#about"
+              onClick={(e) => { e.preventDefault(); scrollToSection('about'); }}
+              className={`transition-colors duration-200 ${currentPage === 'about' ? 'text-[#f2603e] font-bold' : 'hover:text-white'}`}
+            >
+              About
+            </a>
+            <a
               href="#contact"
               onClick={(e) => { e.preventDefault(); scrollToSection('contact'); }}
-              className="hover:text-white transition-colors duration-200"
+              className={`transition-colors duration-200 ${currentPage === 'contact' ? 'text-[#f2603e] font-bold' : 'hover:text-white'}`}
             >
               Contact
             </a>
@@ -163,8 +184,12 @@ export default function Navbar({ currentPage }) {
               Work
             </a>
             <a
-              href="#products"
-              onClick={(e) => { e.preventDefault(); scrollToSection('products'); }}
+              href="#category-software-solutions"
+              onClick={(e) => {
+                e.preventDefault();
+                setMobileMenuOpen(false);
+                window.location.hash = '#category-software-solutions';
+              }}
               className="text-[#95928a] hover:text-white py-1 font-medium"
             >
               Products
@@ -177,9 +202,16 @@ export default function Navbar({ currentPage }) {
               Submit Requirement
             </a>
             <a
+              href="#about"
+              onClick={(e) => { e.preventDefault(); scrollToSection('about'); }}
+              className={`py-1 font-medium ${currentPage === 'about' ? 'text-[#f2603e] font-bold' : 'text-[#95928a] hover:text-white'}`}
+            >
+              About
+            </a>
+            <a
               href="#contact"
               onClick={(e) => { e.preventDefault(); scrollToSection('contact'); }}
-              className="text-[#95928a] hover:text-white py-1 font-medium"
+              className={`py-1 font-medium ${currentPage === 'contact' ? 'text-[#f2603e] font-bold' : 'text-[#95928a] hover:text-white'}`}
             >
               Contact
             </a>
