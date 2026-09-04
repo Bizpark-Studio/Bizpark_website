@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries } from '../data/store';
 
-const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
+const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL !== undefined)
+  ? import.meta.env.VITE_BACKEND_URL
+  : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5001');
 
 export default function AdminPanel() {
   const [storeData, setStoreData] = useState(getStoreData());
