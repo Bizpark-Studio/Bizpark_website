@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries, getBackendUrl, syncFromBackend } from '../data/store';
 
+const BACKEND_URL = getBackendUrl();
+
 export default function AdminPanel() {
   const [storeData, setStoreData] = useState(getStoreData());
   const [isAuthenticated, setIsAuthenticated] = useState(() => {

@@ -15,7 +15,9 @@ export async function submitInquiry(formData) {
   let deliveryMethod = 'vault_only'; // 'smtp' | 'web3forms' | 'vault_only'
   let dispatchNote = '';
 
-  const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
+  const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL !== undefined)
+    ? import.meta.env.VITE_BACKEND_URL
+    : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5001');
 
   // 2. Dispatch to Backend Express Server (Saves to MongoDB Atlas & sends SMTP email if configured)
   try {
