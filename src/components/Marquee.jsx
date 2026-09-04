@@ -6,7 +6,7 @@ export default function Marquee() {
     '✦',
     'SOCIAL MEDIA MARKETING',
     '✦',
-    'GRAPHIC DESIGN',
+    'BRANDING & DESIGN',
     '✦',
   ];
 

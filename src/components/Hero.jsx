@@ -80,7 +80,7 @@ export default function Hero() {
             </h1>
 
             <p className="text-[#95928a] text-base sm:text-lg max-w-xl leading-relaxed">
-              {currentBanner.subtitle || 'One studio, three disciplines — software development, social media marketing, and graphic design — run from a single plan, so nothing gets lost between teams.'}
+              {currentBanner.subtitle || 'One studio, three disciplines — software development, social media marketing, and branding — run from a single plan, so nothing gets lost between teams.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">

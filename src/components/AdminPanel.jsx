@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries } from '../data/store';
-
-const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) || 'http://localhost:5001';
+import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries, getBackendUrl, syncFromBackend } from '../data/store';
 
 export default function AdminPanel() {
   const [storeData, setStoreData] = useState(getStoreData());
@@ -22,16 +20,24 @@ export default function AdminPanel() {
   const [editingTeamMember, setEditingTeamMember] = useState(null);
   const [saveNotification, setSaveNotification] = useState('');
   const [inquirySearch, setInquirySearch] = useState('');
-  const [settingsState, setSettingsState] = useState(storeData.settings || {
-    adminEmail: 'bizparkstudio@gmail.com',
-    whatsappNumber: '0783157736',
-    phone: '0783157736',
-    address: 'Colombo, Sri Lanka',
-    web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5'
+  const [settingsState, setSettingsState] = useState(() => {
+    const data = getStoreData();
+    const storedBackend = typeof window !== 'undefined' ? localStorage.getItem('bizpark_backend_url') : '';
+    return {
+      adminEmail: 'bizparkstudio@gmail.com',
+      whatsappNumber: '0783157736',
+      phone: '0783157736',
+      address: 'Colombo, Sri Lanka',
+      web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5',
+      backendUrl: storedBackend || '',
+      ...(data.settings || {})
+    };
   });
   const [emailConfig, setEmailConfig] = useState(null);
   const [testEmailStatus, setTestEmailStatus] = useState('');
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+  const [cloudTestStatus, setCloudTestStatus] = useState('');
+  const [isTestingCloud, setIsTestingCloud] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -39,7 +45,8 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (activeTab === 'settings') {
-      fetch(`${BACKEND_URL}/api/email-config`)
+      const backendUrl = getBackendUrl();
+      fetch(`${backendUrl}/api/email-config`)
         .then((res) => res.json())
         .then((data) => setEmailConfig(data))
         .catch(() => {});
@@ -50,7 +57,8 @@ export default function AdminPanel() {
     setIsSendingTestEmail(true);
     setTestEmailStatus('Sending test email notification...');
     try {
-      const res = await fetch(`${BACKEND_URL}/api/test-email`, {
+      const backendUrl = getBackendUrl();
+      const res = await fetch(`${backendUrl}/api/test-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipient: settingsState.adminEmail || 'bizparkstudio@gmail.com' })
@@ -62,21 +70,63 @@ export default function AdminPanel() {
         setTestEmailStatus(`⚠️ Email not sent: ${data.reason || data.error || 'Check .env SMTP credentials'}`);
       }
     } catch {
-      setTestEmailStatus('❌ Error reaching backend Express server.');
+      setTestEmailStatus(`❌ Error reaching backend at ${getBackendUrl()}. Make sure backend is running.`);
     } finally {
       setIsSendingTestEmail(false);
     }
   };
 
-  const triggerSaveNotification = (msg) => {
-    setSaveNotification(msg);
-    setTimeout(() => setSaveNotification(''), 3500);
+  const handleTestCloudConnection = async () => {
+    setIsTestingCloud(true);
+    const backendUrl = getBackendUrl();
+    setCloudTestStatus(`Testing connection to: ${backendUrl}...`);
+    try {
+      const res = await fetch(`${backendUrl}/api/health`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.database === 'connected') {
+          setCloudTestStatus(`✓ SUCCESS! Connected to MongoDB Atlas via ${backendUrl}`);
+        } else {
+          setCloudTestStatus(`⚠️ Backend connected at ${backendUrl}, but MongoDB status is: ${data.database}`);
+        }
+      } else {
+        setCloudTestStatus(`❌ Backend responded with HTTP status ${res.status}`);
+      }
+    } catch (err) {
+      setCloudTestStatus(`❌ Connection failed to ${backendUrl}: ${err.message}. If your frontend is hosted, enter your live backend URL below.`);
+    } finally {
+      setIsTestingCloud(false);
+    }
   };
 
-  const handleSaveAll = (updatedData) => {
-    saveStoreData(updatedData);
+  const handleForceCloudSync = async () => {
+    triggerSaveNotification('Fetching latest data directly from MongoDB Atlas...');
+    const result = await syncFromBackend();
+    if (result && result.success) {
+      setStoreData(result.data);
+      triggerSaveNotification('✓ Live data successfully synchronized from MongoDB Atlas!');
+    } else {
+      triggerSaveNotification('⚠️ Could not sync from cloud. Using local store data.');
+    }
+  };
+
+  const triggerSaveNotification = (msg) => {
+    setSaveNotification(msg);
+    setTimeout(() => setSaveNotification(''), 4500);
+  };
+
+  const handleSaveAll = async (updatedData) => {
     setStoreData(updatedData);
-    triggerSaveNotification('✓ Content updated successfully & saved live!');
+    triggerSaveNotification('💾 Saving to Cloud Database...');
+    const result = await saveStoreData(updatedData);
+    if (result && result.remoteSaved) {
+      triggerSaveNotification('✓ Content successfully saved to MongoDB Atlas & published live!');
+    } else if (result && result.remoteError) {
+      triggerSaveNotification(`⚠️ Saved locally, but CLOUD SYNC FAILED: ${result.remoteError}`);
+      console.warn('Cloud sync failure:', result.remoteError);
+    } else {
+      triggerSaveNotification('✓ Content updated in local memory.');
+    }
   };
 
   // LOGIN HANDLER
@@ -100,16 +150,23 @@ export default function AdminPanel() {
   const handleFileUpload = async (file, callback) => {
     if (!file) return;
     try {
+      const backendUrl = getBackendUrl();
       const formData = new FormData();
       formData.append('image', file);
-      const res = await fetch(`${BACKEND_URL}/api/upload-image`, {
+      const res = await fetch(`${backendUrl}/api/upload-image`, {
         method: 'POST',
         body: formData
       });
       if (res.ok) {
         const data = await res.json();
         if (data.url) {
-          callback(data.url);
+          // If backend is on a different domain, format full URL
+          const resolvedUrl = data.url.startsWith('http')
+            ? data.url
+            : backendUrl && !backendUrl.includes('localhost:5001') && backendUrl.startsWith('http')
+            ? `${backendUrl}${data.url}`
+            : data.url;
+          callback(resolvedUrl);
           triggerSaveNotification('✓ Image uploaded to server successfully!');
           return;
         }
@@ -435,14 +492,18 @@ export default function AdminPanel() {
   };
 
   // SYSTEM SETTINGS & DATA BACKUP HANDLERS
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = async (e) => {
     e.preventDefault();
+    if (settingsState.backendUrl && settingsState.backendUrl.trim()) {
+      localStorage.setItem('bizpark_backend_url', settingsState.backendUrl.trim());
+    } else {
+      localStorage.removeItem('bizpark_backend_url');
+    }
     const updated = {
       ...storeData,
       settings: settingsState
     };
-    handleSaveAll(updated);
-    triggerSaveNotification('✓ Email dispatch & system settings updated live!');
+    await handleSaveAll(updated);
   };
 
   const handleExportJSON = () => {
@@ -2186,12 +2247,76 @@ export default function AdminPanel() {
                 </p>
               </div>
 
+              {/* Cloud Database & Live Hosting Backend Server Settings */}
+              <div className="bg-[#0a0a0a] border border-[#f2603e]/40 p-5 cut-sm space-y-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f2603e] animate-pulse" />
+                    <span className="font-mono text-xs text-[#f2603e] font-bold uppercase tracking-wider">
+                      Live Cloud Database &amp; API Server URL
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#95928a] uppercase bg-white/5 px-2 py-0.5 cut-sm border border-white/10">
+                    MongoDB Atlas Connected
+                  </span>
+                </div>
+
+                <p className="text-xs text-[#95928a] font-mono leading-relaxed">
+                  When your website is hosted live (e.g. Netlify, Vercel, cPanel, or custom domain), enter the URL of your deployed Express backend API here. Edits to projects, hero banners, and leads will save directly to MongoDB Atlas.
+                </p>
+
+                <div>
+                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-1.5 font-semibold">
+                    Backend API Endpoint URL
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={settingsState.backendUrl || ''}
+                      onChange={(e) => setSettingsState({ ...settingsState, backendUrl: e.target.value })}
+                      placeholder="e.g. https://bizpark-backend.onrender.com (or leave empty for auto-detect / same-origin)"
+                      className="flex-1 bg-[#141413] border border-white/15 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleTestCloudConnection}
+                      disabled={isTestingCloud}
+                      className="bg-white/10 hover:bg-[#f2603e] hover:text-black text-white font-chakra font-bold text-xs uppercase px-5 py-3 cut-sm transition-all border border-white/20 whitespace-nowrap disabled:opacity-50 cursor-pointer"
+                    >
+                      {isTestingCloud ? 'Testing...' : 'Test Connection ⚡'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleForceCloudSync}
+                      className="bg-white/10 hover:bg-white/20 text-white font-chakra font-bold text-xs uppercase px-4 py-3 cut-sm transition-all border border-white/20 whitespace-nowrap cursor-pointer"
+                    >
+                      Force Re-Sync 🔄
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-[#605e58] font-mono mt-1.5 block">
+                    Active resolved URL: <strong className="text-white">{getBackendUrl()}</strong>
+                  </span>
+                </div>
+
+                {cloudTestStatus && (
+                  <div className={`p-3 cut-sm font-mono text-xs ${
+                    cloudTestStatus.includes('SUCCESS')
+                      ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300'
+                      : cloudTestStatus.includes('Testing')
+                      ? 'bg-[#141413] border border-white/20 text-[#f2603e]'
+                      : 'bg-red-950/80 border border-red-500/50 text-red-300'
+                  }`}>
+                    {cloudTestStatus}
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end">
                 <button
                   type="submit"
                   className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs uppercase px-8 py-3.5 cut-sm transition-all shadow-lg"
                 >
-                  Save Email &amp; Notification Settings →
+                  Save Settings &amp; Cloud Configuration →
                 </button>
               </div>
             </form>

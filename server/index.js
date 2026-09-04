@@ -249,8 +249,8 @@ app.post('/api/data', async (req, res) => {
     };
     const saved = await SiteData.findOneAndUpdate(
       { key: 'main_site_data' },
-      updatePayload,
-      { upsert: true, returnDocument: 'after' }
+      { $set: updatePayload },
+      { upsert: true, new: true }
     );
     res.json({ success: true, data: saved });
   } catch (err) {
@@ -367,6 +367,19 @@ app.delete('/api/inquiries', async (req, res) => {
     res.status(500).json({ error: 'Failed to clear inquiries' });
   }
 });
+
+// SERVE COMPILED FRONTEND (FOR PRODUCTION HOSTING)
+const distDir = path.resolve(__dirname, '../dist');
+if (fs.existsSync(distDir)) {
+  console.log('📦 Serving production frontend build from', distDir);
+  app.use(express.static(distDir));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/images')) {
+      return next();
+    }
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`🚀 Bizpark Studio Express Backend active at http://localhost:${PORT}`);
