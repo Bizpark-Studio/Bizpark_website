@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoreData, saveStoreData, resetStoreData } from '../data/store';
+import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries } from '../data/store';
 
 export default function AdminPanel() {
   const [storeData, setStoreData] = useState(getStoreData());
@@ -12,12 +12,18 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState('');
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'herobanners' | 'homepage' | 'banners'
+  const [activeTab, setActiveTab] = useState('projects'); // 'projects' | 'herobanners' | 'homepage' | 'banners' | 'inquiries' | 'settings'
   const [selectedCategoryKey, setSelectedCategoryKey] = useState('branding');
   const [editingProject, setEditingProject] = useState(null);
   const [editingHeroBanner, setEditingHeroBanner] = useState(null);
   const [editingBanner, setEditingBanner] = useState(null);
   const [saveNotification, setSaveNotification] = useState('');
+  const [inquirySearch, setInquirySearch] = useState('');
+  const [settingsState, setSettingsState] = useState(storeData.settings || {
+    adminEmail: 'bizparkstudio@gmail.com',
+    whatsappNumber: '+94770000000',
+    web3formsKey: ''
+  });
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -310,6 +316,66 @@ export default function AdminPanel() {
     );
   }
 
+  // INQUIRIES & LEADS HANDLERS
+  const handleDeleteInquiryItem = (id) => {
+    if (window.confirm('Are you sure you want to delete this client inquiry?')) {
+      const remaining = deleteInquiry(id);
+      setStoreData((prev) => ({ ...prev, inquiries: remaining }));
+      triggerSaveNotification('Inquiry deleted from Admin Vault.');
+    }
+  };
+
+  const handleClearAllInquiriesList = () => {
+    if (window.confirm('Delete all client inquiries? This action cannot be undone.')) {
+      clearAllInquiries();
+      setStoreData((prev) => ({ ...prev, inquiries: [] }));
+      triggerSaveNotification('All inquiries cleared.');
+    }
+  };
+
+  // SYSTEM SETTINGS & DATA BACKUP HANDLERS
+  const handleSaveSettings = (e) => {
+    e.preventDefault();
+    const updated = {
+      ...storeData,
+      settings: settingsState
+    };
+    handleSaveAll(updated);
+    triggerSaveNotification('✓ Email dispatch & system settings updated live!');
+  };
+
+  const handleExportJSON = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(storeData, null, 2));
+    const a = document.createElement('a');
+    a.setAttribute('href', dataStr);
+    a.setAttribute('download', `bizpark-studio-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    triggerSaveNotification('✓ Complete Site Data exported to JSON backup file!');
+  };
+
+  const handleImportJSON = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result);
+        if (parsed && parsed.categories) {
+          handleSaveAll(parsed);
+          triggerSaveNotification('✓ Site Data restored from JSON backup successfully!');
+        } else {
+          alert('Invalid backup JSON format. Missing categories array.');
+        }
+      } catch (err) {
+        console.error('Import JSON parsing error:', err);
+        alert('Failed to parse JSON file. Please ensure it is a valid file.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const activeCategory = storeData.categories.find((c) => c.key === selectedCategoryKey) || storeData.categories[0];
 
   return (
@@ -402,6 +468,31 @@ export default function AdminPanel() {
             }`}
           >
             4. Software Section Highlights
+          </button>
+          <button
+            onClick={() => { setActiveTab('inquiries'); setEditingProject(null); }}
+            className={`font-mono text-xs uppercase px-5 py-3 cut-sm transition-all font-bold flex items-center gap-2 ${
+              activeTab === 'inquiries'
+                ? 'bg-[#f2603e] text-black shadow-lg shadow-[#f2603e]/20'
+                : 'bg-[#141413] text-[#95928a] hover:text-white border border-white/10'
+            }`}
+          >
+            <span>5. Inquiries &amp; Leads</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-sm font-mono ${
+              activeTab === 'inquiries' ? 'bg-black text-[#f2603e]' : 'bg-[#f2603e] text-black font-bold'
+            }`}>
+              {(storeData.inquiries || []).length}
+            </span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('settings'); setEditingProject(null); }}
+            className={`font-mono text-xs uppercase px-5 py-3 cut-sm transition-all font-bold ${
+              activeTab === 'settings'
+                ? 'bg-[#f2603e] text-black shadow-lg shadow-[#f2603e]/20'
+                : 'bg-[#141413] text-[#95928a] hover:text-white border border-white/10'
+            }`}
+          >
+            6. System Email &amp; Backup
           </button>
         </div>
 
@@ -1389,6 +1480,338 @@ export default function AdminPanel() {
                 ))}
               </div>
             )}
+
+          </div>
+        )}
+
+        {/* TAB 5: INQUIRIES & LEADS INBOX */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#141413] border border-white/10 p-6 cut">
+              <div>
+                <div className="inline-flex items-center gap-2 text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-1 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-[#f2603e] animate-pulse" />
+                  CLIENT LEADS VAULT
+                </div>
+                <h3 className="font-chakra text-2xl text-white uppercase font-bold">
+                  Inquiries &amp; Customer Requirements ({(storeData.inquiries || []).length})
+                </h3>
+                <p className="text-xs text-[#95928a] font-mono mt-1">
+                  Every inquiry submitted across the homepage and case studies is preserved here in real-time.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {storeData.inquiries && storeData.inquiries.length > 0 && (
+                  <button
+                    onClick={handleClearAllInquiriesList}
+                    className="bg-red-950/60 hover:bg-red-900/80 border border-red-500/40 text-red-300 font-mono text-xs uppercase px-4 py-2 cut-sm transition-all"
+                  >
+                    Clear All Leads 🗑
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Search Input */}
+            <div className="bg-[#141413] border border-white/10 p-4 cut flex items-center gap-4">
+              <span className="font-mono text-xs text-[#605e58] uppercase font-bold whitespace-nowrap">Filter Inquiries:</span>
+              <input
+                type="text"
+                value={inquirySearch}
+                onChange={(e) => setInquirySearch(e.target.value)}
+                placeholder="Search by client name, email, phone, company, or requirement keywords..."
+                className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-4 py-2.5 text-xs font-mono text-white outline-none cut-sm"
+              />
+              {inquirySearch && (
+                <button
+                  onClick={() => setInquirySearch('')}
+                  className="font-mono text-xs text-[#95928a] hover:text-white px-2"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Inquiries List */}
+            {(() => {
+              const filtered = (storeData.inquiries || []).filter((inq) => {
+                if (!inquirySearch.trim()) return true;
+                const q = inquirySearch.toLowerCase();
+                return (
+                  (inq.name && inq.name.toLowerCase().includes(q)) ||
+                  (inq.email && inq.email.toLowerCase().includes(q)) ||
+                  (inq.phone && inq.phone.toLowerCase().includes(q)) ||
+                  (inq.company && inq.company.toLowerCase().includes(q)) ||
+                  (inq.details && inq.details.toLowerCase().includes(q)) ||
+                  (inq.source && inq.source.toLowerCase().includes(q))
+                );
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="bg-[#141413] border border-white/10 p-12 text-center cut font-mono text-sm text-[#95928a] space-y-3">
+                    <p className="text-base text-white font-chakra uppercase font-bold">No Inquiries Found</p>
+                    <p className="text-xs">
+                      {inquirySearch ? 'No inquiries matched your search keyword.' : 'Client inquiries submitted through the website will appear here.'}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filtered.map((inq) => (
+                    <div
+                      key={inq.id}
+                      className="bg-[#141413] border border-white/10 p-6 cut transition-all hover:border-[#f2603e]/40 space-y-4 shadow-xl"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-xs text-[#f2603e] font-bold bg-black/60 px-3 py-1 border border-[#f2603e]/30 cut-sm">
+                            {inq.source || 'Website Lead'}
+                          </span>
+                          <span className="font-mono text-xs text-[#95928a]">
+                            Received: <strong className="text-white">{inq.date}</strong>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {inq.email && (
+                            <a
+                              href={`mailto:${inq.email}?subject=Regarding Your Bizpark Studio Inquiry&body=Hi ${inq.name},%0D%0A%0D%0AThank you for reaching out to Bizpark Studio regarding your project.`}
+                              className="bg-white/10 hover:bg-white/20 text-white font-mono text-xs px-3 py-1.5 cut-sm transition-all"
+                            >
+                              ✉ Reply via Email
+                            </a>
+                          )}
+                          {inq.phone && (
+                            <a
+                              href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="bg-[#25D366]/20 text-[#25D366] hover:bg-[#25D366] hover:text-black font-mono text-xs px-3 py-1.5 cut-sm transition-all font-bold"
+                            >
+                              💬 WhatsApp
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDeleteInquiryItem(inq.id)}
+                            className="text-red-400 hover:text-red-300 font-mono text-xs px-2.5 py-1.5 border border-red-500/20 hover:border-red-500/40 cut-sm"
+                          >
+                            Delete ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lead Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-[#0a0a0a] p-4 cut-sm font-mono text-xs">
+                        <div>
+                          <span className="block text-[10px] text-[#605e58] uppercase">Client Name</span>
+                          <span className="text-sm font-bold text-white">{inq.name}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] text-[#605e58] uppercase">Email Address</span>
+                          <span className="text-xs text-[#f2603e] break-all">{inq.email}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] text-[#605e58] uppercase">Phone / WhatsApp</span>
+                          <span className="text-xs text-white">{inq.phone || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="block text-[10px] text-[#605e58] uppercase">Budget &amp; Timeline</span>
+                          <span className="text-xs text-emerald-400 font-semibold">{inq.budget || 'N/A'} ({inq.timeline || 'ASAP'})</span>
+                        </div>
+                      </div>
+
+                      {inq.company && (
+                        <p className="font-mono text-xs text-[#95928a]">
+                          Company / Brand Entity: <strong className="text-white">{inq.company}</strong>
+                        </p>
+                      )}
+
+                      {inq.services && inq.services.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-[#605e58] uppercase mr-1">Services:</span>
+                          {inq.services.map((s, idx) => (
+                            <span key={idx} className="font-mono text-[10px] text-white bg-[#0a0a0a] px-2 py-0.5 border border-white/10 cut-sm">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Project Requirements text */}
+                      <div className="bg-black/60 border border-white/5 p-4 cut-sm">
+                        <span className="block font-mono text-[10px] text-[#f2603e] uppercase font-bold mb-1.5">
+                          Requirement Details:
+                        </span>
+                        <p className="text-xs text-[#f5f4ef] font-mono whitespace-pre-wrap leading-relaxed">
+                          {inq.details || inq.message || 'No additional details provided.'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+          </div>
+        )}
+
+        {/* TAB 6: SYSTEM EMAIL SETTINGS & DATA BACKUP */}
+        {activeTab === 'settings' && (
+          <div className="space-y-8">
+            
+            {/* Email Dispatch Configuration Form */}
+            <form onSubmit={handleSaveSettings} className="bg-[#141413] border border-white/10 p-6 sm:p-8 cut space-y-6 shadow-2xl">
+              <div className="border-b border-white/10 pb-4">
+                <div className="inline-flex items-center gap-2 text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-1 font-bold">
+                  <span>⚙</span>
+                  EMAIL &amp; NOTIFICATION CONFIGURATION
+                </div>
+                <h3 className="font-chakra text-2xl text-white uppercase font-bold">
+                  Form Email Dispatcher
+                </h3>
+                <p className="text-xs text-[#95928a] font-mono mt-1">
+                  Configure where incoming website client inquiries and project submissions get delivered.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">
+                    Receiver Admin Email <span className="text-[#f2603e]">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={settingsState.adminEmail || ''}
+                    onChange={(e) => setSettingsState({ ...settingsState, adminEmail: e.target.value })}
+                    placeholder="bizparkstudio@gmail.com"
+                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                  />
+                  <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
+                    All client requirement submissions will target this address.
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">
+                    Studio Official WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    value={settingsState.whatsappNumber || ''}
+                    onChange={(e) => setSettingsState({ ...settingsState, whatsappNumber: e.target.value })}
+                    placeholder="+94 77 123 4567"
+                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                  />
+                  <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
+                    Used for instant WhatsApp chat shortcuts across forms and cards.
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-[#0a0a0a] border border-white/10 p-5 cut-sm space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="font-mono text-xs text-[#f2603e] uppercase font-bold">
+                    Web3Forms Free API Access Key (Optional for Direct SMTP Delivery)
+                  </label>
+                  <a
+                    href="https://web3forms.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] font-mono text-[#f2603e] hover:underline"
+                  >
+                    Get Free Key at web3forms.com (1-Click) ↗
+                  </a>
+                </div>
+
+                <input
+                  type="text"
+                  value={settingsState.web3formsKey || ''}
+                  onChange={(e) => setSettingsState({ ...settingsState, web3formsKey: e.target.value })}
+                  placeholder="e.g. b149b071-700a-428a-9a99-sample-key"
+                  className="w-full bg-[#141413] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                />
+                <p className="text-[11px] text-[#95928a] font-mono leading-relaxed">
+                  Web3Forms is a completely free, zero-setup service that forwards form submissions directly to your email inbox without needing any backend server. You can get an instant key by entering your email at <a href="https://web3forms.com" target="_blank" rel="noreferrer" className="text-white underline">web3forms.com</a>. If blank, inquiries will still be 100% saved in the <strong>Inquiries &amp; Leads Inbox</strong> above!
+                </p>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs uppercase px-8 py-3.5 cut-sm transition-all shadow-lg"
+                >
+                  Save Email &amp; Notification Settings →
+                </button>
+              </div>
+            </form>
+
+            {/* Complete Data Backup & Migration (Export / Import JSON) */}
+            <div className="bg-[#141413] border border-white/10 p-6 sm:p-8 cut space-y-6 shadow-2xl">
+              <div className="border-b border-white/10 pb-4">
+                <div className="inline-flex items-center gap-2 text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-1 font-bold">
+                  <span>💾</span>
+                  DATA PERSISTENCE &amp; CLOUD BACKUP
+                </div>
+                <h3 className="font-chakra text-2xl text-white uppercase font-bold">
+                  Backup, Restore &amp; Migrate Entire Website Data
+                </h3>
+                <p className="text-xs text-[#95928a] font-mono mt-1">
+                  Because browser storage is local to this device, use these tools to backup all your projects, hero banners, software products, and leads into a single JSON file that can be restored on any computer.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Export Card */}
+                <div className="bg-[#0a0a0a] border border-white/10 p-6 cut-sm space-y-4 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <span className="font-mono text-xs text-emerald-400 font-bold uppercase block">
+                      EXPORT BACKUP
+                    </span>
+                    <h4 className="font-chakra text-xl text-white uppercase font-bold">
+                      Download Full Data Backup (.JSON)
+                    </h4>
+                    <p className="text-xs text-[#95928a] font-mono leading-relaxed">
+                      Exports all 4 categories, custom projects, process photos, hero banners, software download links, and inquiries into an offline file.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleExportJSON}
+                    className="w-full bg-white/10 hover:bg-white/20 text-white font-chakra font-bold text-xs uppercase py-3.5 cut-sm transition-all flex items-center justify-center gap-2 border border-white/15"
+                  >
+                    <span>Download Site Data JSON ⬇</span>
+                  </button>
+                </div>
+
+                {/* Import Card */}
+                <div className="bg-[#0a0a0a] border border-white/10 p-6 cut-sm space-y-4 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <span className="font-mono text-xs text-[#f2603e] font-bold uppercase block">
+                      RESTORE / MIGRATE
+                    </span>
+                    <h4 className="font-chakra text-xl text-white uppercase font-bold">
+                      Import Backup File (.JSON)
+                    </h4>
+                    <p className="text-xs text-[#95928a] font-mono leading-relaxed">
+                      Upload a previously exported backup file to synchronize your latest edits, projects, and hero banners to this browser immediately.
+                    </p>
+                  </div>
+                  <label className="w-full bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs uppercase py-3.5 cut-sm transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <span>Upload &amp; Restore JSON File ⬆</span>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      className="hidden"
+                      onChange={handleImportJSON}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
 
           </div>
         )}

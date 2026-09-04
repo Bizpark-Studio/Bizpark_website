@@ -467,6 +467,28 @@ export const initialSoftwareBanners = [
   }
 ];
 
+export const initialSettings = {
+  adminEmail: 'bizparkstudio@gmail.com',
+  whatsappNumber: '+94770000000',
+  web3formsKey: ''
+};
+
+export const initialInquiries = [
+  {
+    id: 'inq-sample-1',
+    name: 'Sample Client (Demo)',
+    email: 'client@example.com',
+    phone: '+94 77 123 4567',
+    company: 'Nexus Innovations',
+    services: ['Software Solutions', 'Web Solutions'],
+    budget: '$3,000 - $7,000',
+    timeline: '1 - 2 Months',
+    details: 'Looking for a custom POS and restaurant inventory management system with offline sync.',
+    source: 'Homepage Form',
+    date: new Date().toLocaleString()
+  }
+];
+
 export function getStoreData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -475,6 +497,12 @@ export function getStoreData() {
       if (parsed && parsed.categories) {
         if (!parsed.homepageHeroBanners) {
           parsed.homepageHeroBanners = initialHomepageHeroBanners;
+        }
+        if (!parsed.settings) {
+          parsed.settings = initialSettings;
+        }
+        if (!parsed.inquiries) {
+          parsed.inquiries = initialInquiries;
         }
         // Always sync softwareProducts to be 100% identical to software-solutions projects!
         const softwareCat = parsed.categories.find((c) => c.key === 'software-solutions');
@@ -493,8 +521,42 @@ export function getStoreData() {
     categories: initialCategories,
     homepageHeroBanners: initialHomepageHeroBanners,
     softwareBanners: initialSoftwareBanners,
-    softwareProducts: defaultSoftware
+    softwareProducts: defaultSoftware,
+    settings: initialSettings,
+    inquiries: initialInquiries
   };
+}
+
+// Background MongoDB sync helper
+const BACKEND_URL = 'http://localhost:5000';
+
+export async function syncFromBackend() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/data`);
+    if (res.ok) {
+      const remoteData = await res.json();
+      if (remoteData && remoteData.categories && remoteData.categories.length > 0) {
+        const local = getStoreData();
+        const merged = {
+          ...local,
+          categories: remoteData.categories,
+          homepageHeroBanners: remoteData.homepageHeroBanners || local.homepageHeroBanners,
+          softwareBanners: remoteData.softwareBanners || local.softwareBanners,
+          softwareProducts: remoteData.softwareProducts || local.softwareProducts,
+          settings: remoteData.settings || local.settings
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new Event('bizpark_store_updated'));
+      }
+    }
+  } catch {
+    // Graceful offline fallback: continue with local cache
+  }
+}
+
+// Automatically initiate background sync on module load
+if (typeof window !== 'undefined') {
+  syncFromBackend();
 }
 
 export function saveStoreData(data) {
@@ -506,9 +568,55 @@ export function saveStoreData(data) {
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new Event('bizpark_store_updated'));
+
+    // Asynchronously dispatch update to Express MongoDB Backend
+    fetch(`${BACKEND_URL}/api/data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).catch(() => {
+      // Offline fallback: data is already safely stored in local browser cache
+    });
   } catch (e) {
     console.error('Error saving store data to localStorage', e);
   }
+}
+
+export function addInquiry(inquiryData) {
+  const data = getStoreData();
+  const newInquiry = {
+    id: `inq-${Date.now()}`,
+    date: new Date().toLocaleString(),
+    ...inquiryData
+  };
+  data.inquiries = [newInquiry, ...(data.inquiries || [])];
+  saveStoreData(data);
+  // Local store updated with timestamp
+  return newInquiry;
+}
+
+export function deleteInquiry(id) {
+  const data = getStoreData();
+  data.inquiries = (data.inquiries || []).filter((inq) => inq.id !== id);
+  saveStoreData(data);
+
+  fetch(`${BACKEND_URL}/api/inquiries/${id}`, {
+    method: 'DELETE'
+  }).catch(() => {});
+
+  return data.inquiries;
+}
+
+export function clearAllInquiries() {
+  const data = getStoreData();
+  data.inquiries = [];
+  saveStoreData(data);
+
+  fetch(`${BACKEND_URL}/api/inquiries`, {
+    method: 'DELETE'
+  }).catch(() => {});
+
+  return [];
 }
 
 export function resetStoreData() {
@@ -517,7 +625,9 @@ export function resetStoreData() {
     categories: initialCategories,
     homepageHeroBanners: initialHomepageHeroBanners,
     softwareBanners: initialSoftwareBanners,
-    softwareProducts: defaultSoftware
+    softwareProducts: defaultSoftware,
+    settings: initialSettings,
+    inquiries: initialInquiries
   };
   saveStoreData(data);
   return data;

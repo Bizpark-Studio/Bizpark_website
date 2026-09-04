@@ -22,8 +22,8 @@ export default function Work() {
     const timer = setInterval(() => {
       setSlideIndices((prev) => {
         const next = { ...prev };
-        categories.forEach((cat, catIdx) => {
-          const featuredProjs = cat.projects.filter(p => p.featuredOnHome !== false);
+        (storeData.categories || []).forEach((cat, catIdx) => {
+          const featuredProjs = cat.projects.filter((p) => p.featuredOnHome !== false);
           const count = featuredProjs.length || cat.projects.length || 1;
           next[catIdx] = (prev[catIdx] + 1) % count;
         });
@@ -32,7 +32,7 @@ export default function Work() {
     }, 3800);
 
     return () => clearInterval(timer);
-  }, [categories]);
+  }, [storeData]);
 
   return (
     <section id="work" className="py-28 bg-[#0a0a0a] relative">

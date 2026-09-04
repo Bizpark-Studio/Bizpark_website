@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getStoreData } from '../data/store';
 import confetti from 'canvas-confetti';
+import { submitInquiry } from '../utils/mailService';
 
 export default function ProjectDetail({ projectId }) {
   const [storeData, setStoreData] = useState(getStoreData());
@@ -22,6 +23,9 @@ export default function ProjectDetail({ projectId }) {
     budget: '$1,000 - $3,000',
     message: ''
   });
+
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [projectWhatsappUrl, setProjectWhatsappUrl] = useState('');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -228,9 +232,27 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
     }
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    setFormSubmitted(true);
+    setFormSubmitting(true);
+    try {
+      const res = await submitInquiry({
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone,
+        budget: contactData.budget,
+        details: contactData.message,
+        source: `Project Case Study: ${project.name} (${categoryTag})`
+      });
+      setProjectWhatsappUrl(res.whatsappUrl);
+      setFormSubmitted(true);
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 }, colors: ['#f2603e', '#f5f4ef', '#ff6f4a'] });
+    } catch (err) {
+      console.error(err);
+      setFormSubmitted(true);
+    } finally {
+      setFormSubmitting(false);
+    }
   };
 
   const isVideo = (med) => {
@@ -775,20 +797,34 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             </div>
 
             {formSubmitted ? (
-              <div className="bg-[#0a0a0a] border border-[#f2603e] p-8 text-center cut-sm space-y-4 animate-fadeIn">
+              <div className="bg-[#0a0a0a] border border-[#f2603e] p-8 text-center cut-sm space-y-5 animate-fadeIn">
                 <div className="w-12 h-12 rounded-full bg-[#f2603e]/20 text-[#f2603e] mx-auto flex items-center justify-center font-mono font-bold text-xl">
                   ✓
                 </div>
-                <h3 className="font-chakra text-2xl text-white uppercase font-bold">Requirement Submitted!</h3>
+                <h3 className="font-chakra text-2xl text-white uppercase font-bold">Requirement Submitted &amp; Logged!</h3>
                 <p className="text-sm text-[#95928a] max-w-md mx-auto">
-                  Thank you for reaching out regarding your {categoryTag} project. Our team will review your inquiry and contact you within 24 hours.
+                  Thank you for reaching out regarding your {categoryTag} project. Your specifications have been safely logged into our Admin Leads Vault, and our engineering leads will review your inquiry within 24 hours.
                 </p>
-                <button
-                  onClick={() => setFormSubmitted(false)}
-                  className="bg-[#f2603e] text-black font-mono text-xs font-bold uppercase tracking-wider px-6 py-3 cut-sm"
-                >
-                  Send Another Message
-                </button>
+                {projectWhatsappUrl && (
+                  <div className="pt-2">
+                    <a
+                      href={projectWhatsappUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 bg-[#25D366] text-black font-chakra font-bold text-xs uppercase px-6 py-3.5 cut-sm hover:brightness-110 transition-all shadow-lg"
+                    >
+                      <span>💬 Chat with Studio on WhatsApp Now →</span>
+                    </a>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setFormSubmitted(false)}
+                    className="bg-[#141413] hover:bg-white/10 text-[#f5f4ef] border border-white/10 font-mono text-xs uppercase tracking-wider px-6 py-2.5 cut-sm"
+                  >
+                    Send Another Message
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleFormSubmit} className="space-y-6">
@@ -859,9 +895,17 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
 
                 <button
                   type="submit"
-                  className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-sm uppercase tracking-wider px-8 py-4 cut-sm transition-all duration-200 shadow-lg shadow-[#f2603e]/10"
+                  disabled={formSubmitting}
+                  className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-sm uppercase tracking-wider px-8 py-4 cut-sm transition-all duration-200 shadow-lg shadow-[#f2603e]/10 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  Submit Project Requirement →
+                  {formSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Logging Requirement...
+                    </>
+                  ) : (
+                    'Submit Project Requirement →'
+                  )}
                 </button>
               </form>
             )}
