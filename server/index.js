@@ -141,25 +141,33 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded images statically
 const publicImagesDir = path.resolve(__dirname, '../public/images');
-if (!fs.existsSync(publicImagesDir)) {
-  fs.mkdirSync(publicImagesDir, { recursive: true });
+try {
+  if (!fs.existsSync(publicImagesDir)) {
+    fs.mkdirSync(publicImagesDir, { recursive: true });
+  }
+} catch (e) {
+  // Read-only filesystem on Vercel or cloud environments
 }
 app.use('/images', express.static(publicImagesDir));
 
-// Multer storage: save uploaded files to public/images/
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, publicImagesDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || '.jpg';
-    const safeName = `upload_${Date.now()}${ext}`;
-    cb(null, safeName);
-  }
-});
+// Multer storage: memory storage if on Vercel, disk storage locally
+const isVercel = !!process.env.VERCEL;
+const storage = isVercel
+  ? multer.memoryStorage()
+  : multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, publicImagesDir);
+      },
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname) || '.jpg';
+        const safeName = `upload_${Date.now()}${ext}`;
+        cb(null, safeName);
+      }
+    });
+
 const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
@@ -174,37 +182,70 @@ app.post('/api/upload-image', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
+  if (req.file.buffer) {
+    const base64 = req.file.buffer.toString('base64');
+    const imageUrl = `data:${req.file.mimetype};base64,${base64}`;
+    console.log('✓ Image converted to base64 Data URI (serverless mode)');
+    return res.json({ success: true, url: imageUrl });
+  }
   const imageUrl = `/images/${req.file.filename}`;
   console.log('✓ Image uploaded:', imageUrl);
   res.json({ success: true, url: imageUrl });
 });
 
-// Connect to MongoDB Atlas
+// Connect to MongoDB Atlas (Serverless & Persistent mode)
 let isConnected = false;
+let dbConnectPromise = null;
+
 async function connectDB() {
   if (!MONGODB_URI) {
-    console.warn('⚠️ MONGODB_URI not found in .env');
+    console.warn('⚠️ MONGODB_URI not found in environment');
     return;
   }
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      dbName: 'bizpark_studio'
-    });
+  if (mongoose.connection.readyState === 1) {
     isConnected = true;
-    console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
-
-    // Seed database if empty
-    const existing = await SiteData.findOne({ key: 'main_site_data' });
-    if (!existing) {
-      console.log('🌱 Seeding initial site data into MongoDB Atlas...');
-      await SiteData.create(defaultSeedData);
-      console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
-    }
-  } catch (err) {
-    console.error('❌ MongoDB Atlas connection error:', err.message);
+    return;
   }
+  if (!dbConnectPromise) {
+    dbConnectPromise = mongoose.connect(MONGODB_URI, {
+      dbName: 'bizpark_studio'
+    }).then(async () => {
+      isConnected = true;
+      console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
+
+      // Seed database if empty
+      try {
+        const existing = await SiteData.findOne({ key: 'main_site_data' });
+        if (!existing) {
+          console.log('🌱 Seeding initial site data into MongoDB Atlas...');
+          await SiteData.create(defaultSeedData);
+          console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
+        }
+      } catch (seedErr) {
+        console.error('Seed error:', seedErr);
+      }
+    }).catch((err) => {
+      dbConnectPromise = null;
+      isConnected = false;
+      console.error('❌ MongoDB Atlas connection error:', err.message);
+    });
+  }
+  await dbConnectPromise;
 }
 
+// Ensure database connection middleware for serverless invocations
+app.use(async (req, res, next) => {
+  if (MONGODB_URI && mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (e) {
+      console.error('Database connection middleware error:', e);
+    }
+  }
+  next();
+});
+
+// Kick off initial connection attempt
 connectDB();
 
 // API ROUTES
@@ -368,6 +409,11 @@ app.delete('/api/inquiries', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Bizpark Studio Express Backend active at http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Bizpark Studio Express Backend active at http://localhost:${PORT}`);
+  });
+}
+
+export default app;
+
