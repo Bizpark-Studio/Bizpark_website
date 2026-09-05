@@ -127,7 +127,7 @@ async function sendInquiryEmail(inquiry) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const DEFAULT_MONGODB_URI = 'mongodb+srv://anuradha:anuradha@anuradha.av9fjk8.mongodb.net/bizpark_studio?retryWrites=true&w=majority';
 const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
 
@@ -178,8 +178,107 @@ const upload = multer({
   }
 });
 
-// IMAGE UPLOAD ENDPOINT
-app.post('/api/upload-image', upload.single('image'), (req, res) => {
+// Serverless-safe MongoDB Connection Cache (global singleton)
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null, lastError: null };
+}
+
+async function connectDB() {
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return true;
+  }
+  if (!MONGODB_URI) {
+    console.warn('⚠️ MONGODB_URI not found in environment or fallback');
+    return false;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      dbName: 'bizpark_studio',
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 8000,
+      bufferCommands: false
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (m) => {
+      cached.lastError = null;
+      console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
+
+      // Seed database if empty
+      try {
+        const existing = await SiteData.findOne({ key: 'main_site_data' });
+        if (!existing) {
+          console.log('🌱 Seeding initial site data into MongoDB Atlas...');
+          await SiteData.create(defaultSeedData);
+          console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
+        }
+      } catch (seedErr) {
+        console.error('Seed check error:', seedErr.message);
+      }
+      return m;
+    }).catch((err) => {
+      cached.promise = null;
+      cached.lastError = err.message;
+      console.error('❌ MongoDB Atlas connection error:', err.message);
+      return null;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    return !!cached.conn;
+  } catch (err) {
+    cached.promise = null;
+    cached.lastError = err.message;
+    return false;
+  }
+}
+
+// Ensure database connection middleware for API invocations
+app.use(async (req, res, next) => {
+  const isApi = req.path.startsWith('/api') ||
+    ['/data', '/health', '/inquiries', '/upload-image', '/email-config', '/test-email'].some((p) => req.path.startsWith(p));
+
+  if (isApi && mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (e) {
+      console.error('Database connection middleware error:', e.message);
+    }
+  }
+  next();
+});
+
+// Initial non-blocking connection trigger
+connectDB().catch(() => {});
+
+// ==========================================
+// API ROUTER (Supports both /api/* and /*)
+// ==========================================
+const apiRouter = express.Router();
+
+// 1. HEALTH ENDPOINT
+apiRouter.get('/health', async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch {}
+  }
+  const isDbReady = mongoose.connection.readyState === 1;
+  res.json({
+    status: 'ok',
+    database: isDbReady ? 'connected' : 'disconnected',
+    readyState: mongoose.connection.readyState,
+    databaseName: 'bizpark_studio',
+    environment: process.env.VERCEL ? 'vercel_serverless' : 'node_server',
+    lastError: cached.lastError,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 2. IMAGE UPLOAD ENDPOINT
+apiRouter.post('/upload-image', upload.single('image'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded' });
   }
@@ -194,87 +293,8 @@ app.post('/api/upload-image', upload.single('image'), (req, res) => {
   res.json({ success: true, url: imageUrl });
 });
 
-// Connect to MongoDB Atlas (Serverless & Persistent mode)
-let dbConnectPromise = null;
-let lastConnectionError = null;
-
-async function connectDB() {
-  if (mongoose.connection.readyState === 1) {
-    return true;
-  }
-  if (!MONGODB_URI) {
-    console.warn('⚠️ MONGODB_URI not found in environment or fallback');
-    return false;
-  }
-  if (!dbConnectPromise) {
-    dbConnectPromise = mongoose.connect(MONGODB_URI, {
-      dbName: 'bizpark_studio',
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 10000
-    }).then(async () => {
-      lastConnectionError = null;
-      console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
-
-      // Seed database if empty
-      try {
-        const existing = await SiteData.findOne({ key: 'main_site_data' });
-        if (!existing) {
-          console.log('🌱 Seeding initial site data into MongoDB Atlas...');
-          await SiteData.create(defaultSeedData);
-          console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
-        }
-      } catch (seedErr) {
-        console.error('Seed error:', seedErr);
-      }
-      return true;
-    }).catch((err) => {
-      dbConnectPromise = null;
-      lastConnectionError = err.message;
-      console.error('❌ MongoDB Atlas connection error:', err.message);
-      return false;
-    });
-  }
-  return await dbConnectPromise;
-}
-
-// Ensure database connection middleware for API invocations
-app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api')) {
-    if (mongoose.connection.readyState !== 1) {
-      try {
-        await connectDB();
-      } catch (e) {
-        console.error('Database connection middleware error:', e);
-      }
-    }
-  }
-  next();
-});
-
-// Kick off initial connection attempt
-connectDB();
-
-// API HEALTH ENDPOINT (with full diagnostics)
-app.get('/api/health', async (req, res) => {
-  if (mongoose.connection.readyState !== 1) {
-    try {
-      await connectDB();
-    } catch {}
-  }
-  const isDbReady = mongoose.connection.readyState === 1;
-  res.json({
-    status: 'ok',
-    database: isDbReady ? 'connected' : 'disconnected',
-    readyState: mongoose.connection.readyState,
-    databaseName: 'bizpark_studio',
-    environment: process.env.VERCEL ? 'vercel_serverless' : 'node_server',
-    lastError: lastConnectionError,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// GET SITE DATA
-app.get('/api/data', async (req, res) => {
+// 3. GET SITE DATA
+apiRouter.get('/data', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       await connectDB();
@@ -294,8 +314,8 @@ app.get('/api/data', async (req, res) => {
   }
 });
 
-// SAVE / UPDATE SITE DATA
-app.post('/api/data', async (req, res) => {
+// 4. SAVE / UPDATE SITE DATA
+apiRouter.post('/data', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       await connectDB();
@@ -303,7 +323,7 @@ app.post('/api/data', async (req, res) => {
     if (mongoose.connection.readyState !== 1) {
       return res.status(503).json({
         error: 'MongoDB Atlas is disconnected. Please check connection.',
-        lastError: lastConnectionError
+        lastError: cached.lastError
       });
     }
     const updatePayload = {
@@ -326,8 +346,8 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
-// GET ALL INQUIRIES
-app.get('/api/inquiries', async (req, res) => {
+// 5. GET ALL INQUIRIES
+apiRouter.get('/inquiries', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       await connectDB();
@@ -343,8 +363,8 @@ app.get('/api/inquiries', async (req, res) => {
   }
 });
 
-// SUBMIT NEW INQUIRY
-app.post('/api/inquiries', async (req, res) => {
+// 6. SUBMIT NEW INQUIRY
+apiRouter.post('/inquiries', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
       await connectDB();
@@ -380,8 +400,46 @@ app.post('/api/inquiries', async (req, res) => {
   }
 });
 
-// EMAIL CONFIGURATION STATUS
-app.get('/api/email-config', (req, res) => {
+// 7. DELETE INQUIRY (SINGLE)
+apiRouter.delete('/inquiries/:id', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState === 1) {
+      // Support searching by Mongo _id or custom id field
+      const targetId = req.params.id;
+      if (mongoose.Types.ObjectId.isValid(targetId)) {
+        await Inquiry.findByIdAndDelete(targetId);
+      } else {
+        await Inquiry.findOneAndDelete({ id: targetId });
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Delete inquiry error:', err);
+    res.status(500).json({ error: 'Failed to delete inquiry' });
+  }
+});
+
+// 8. CLEAR ALL INQUIRIES
+apiRouter.delete('/inquiries', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState === 1) {
+      await Inquiry.deleteMany({});
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Clear inquiries error:', err);
+    res.status(500).json({ error: 'Failed to clear inquiries' });
+  }
+});
+
+// 9. EMAIL CONFIGURATION STATUS
+apiRouter.get('/email-config', (req, res) => {
   res.json({
     emailUserConfigured: !!process.env.EMAIL_USER,
     emailPasswordConfigured: !!process.env.EMAIL_APP_PASSWORD,
@@ -391,8 +449,8 @@ app.get('/api/email-config', (req, res) => {
   });
 });
 
-// TEST EMAIL DISPATCH
-app.post('/api/test-email', async (req, res) => {
+// 10. TEST EMAIL DISPATCH
+apiRouter.post('/test-email', async (req, res) => {
   try {
     const testInquiry = {
       name: 'Bizpark Studio Test Inquiry',
@@ -413,39 +471,11 @@ app.post('/api/test-email', async (req, res) => {
   }
 });
 
-// DELETE INQUIRY
-app.delete('/api/inquiries/:id', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      await connectDB();
-    }
-    if (mongoose.connection.readyState === 1) {
-      await Inquiry.findByIdAndDelete(req.params.id);
-    }
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Delete inquiry error:', err);
-    res.status(500).json({ error: 'Failed to delete inquiry' });
-  }
-});
+// Mount router on BOTH '/api' and '/' (Guarantees matching regardless of reverse proxy / serverless rewrites)
+app.use('/api', apiRouter);
+app.use('/', apiRouter);
 
-// CLEAR ALL INQUIRIES
-app.delete('/api/inquiries', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      await connectDB();
-    }
-    if (mongoose.connection.readyState === 1) {
-      await Inquiry.deleteMany({});
-    }
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Clear inquiries error:', err);
-    res.status(500).json({ error: 'Failed to clear inquiries' });
-  }
-});
-
-// SERVE COMPILED FRONTEND (FOR PRODUCTION HOSTING)
+// SERVE COMPILED FRONTEND (FOR STANDALONE PRODUCTION HOSTING)
 const distDir = path.resolve(__dirname, '../dist');
 if (fs.existsSync(distDir)) {
   console.log('📦 Serving production frontend build from', distDir);

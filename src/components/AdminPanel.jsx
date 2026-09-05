@@ -42,8 +42,50 @@ export default function AdminPanel() {
   const [cloudTestStatus, setCloudTestStatus] = useState('');
   const [isTestingCloud, setIsTestingCloud] = useState(false);
 
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+
+  // Fetch live client inquiries directly from MongoDB Atlas
+  const fetchInquiries = async () => {
+    setIsLoadingInquiries(true);
+    try {
+      const backendUrl = getBackendUrl();
+      const res = await fetch(`${backendUrl}/api/inquiries`);
+      if (res.ok) {
+        const liveInquiries = await res.json();
+        if (Array.isArray(liveInquiries)) {
+          setStoreData((prev) => ({
+            ...prev,
+            inquiries: liveInquiries
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch inquiries from server:', err);
+    } finally {
+      setIsLoadingInquiries(false);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // 1. Listen for background store updates
+    const handleUpdate = () => {
+      setStoreData(getStoreData());
+    };
+    window.addEventListener('bizpark_store_updated', handleUpdate);
+
+    // 2. Fetch fresh site data from MongoDB Atlas on mount
+    syncFromBackend().then((res) => {
+      if (res && res.success && res.data) {
+        setStoreData(res.data);
+      }
+    });
+
+    // 3. Fetch latest inquiries from MongoDB
+    fetchInquiries();
+
+    return () => window.removeEventListener('bizpark_store_updated', handleUpdate);
   }, []);
 
   useEffect(() => {
@@ -53,6 +95,8 @@ export default function AdminPanel() {
         .then((res) => res.json())
         .then((data) => setEmailConfig(data))
         .catch(() => {});
+    } else if (activeTab === 'inquiries') {
+      fetchInquiries();
     }
   }, [activeTab]);
 
@@ -446,19 +490,34 @@ export default function AdminPanel() {
   }
 
   // INQUIRIES & LEADS HANDLERS
-  const handleDeleteInquiryItem = (id) => {
+  const handleDeleteInquiryItem = async (id) => {
     if (window.confirm('Are you sure you want to delete this client inquiry?')) {
-      const remaining = deleteInquiry(id);
+      const remaining = (storeData.inquiries || []).filter((inq) => (inq._id || inq.id) !== id);
       setStoreData((prev) => ({ ...prev, inquiries: remaining }));
-      triggerSaveNotification('Inquiry deleted from Admin Vault.');
+      deleteInquiry(id);
+
+      try {
+        const backendUrl = getBackendUrl();
+        await fetch(`${backendUrl}/api/inquiries/${id}`, { method: 'DELETE' });
+        triggerSaveNotification('✓ Inquiry deleted from MongoDB Atlas & local storage.');
+      } catch {
+        triggerSaveNotification('Inquiry deleted from local storage.');
+      }
     }
   };
 
-  const handleClearAllInquiriesList = () => {
+  const handleClearAllInquiriesList = async () => {
     if (window.confirm('Delete all client inquiries? This action cannot be undone.')) {
-      clearAllInquiries();
       setStoreData((prev) => ({ ...prev, inquiries: [] }));
-      triggerSaveNotification('All inquiries cleared.');
+      clearAllInquiries();
+
+      try {
+        const backendUrl = getBackendUrl();
+        await fetch(`${backendUrl}/api/inquiries`, { method: 'DELETE' });
+        triggerSaveNotification('✓ All inquiries cleared from MongoDB Atlas.');
+      } catch {
+        triggerSaveNotification('All inquiries cleared.');
+      }
     }
   };
 
@@ -1693,6 +1752,14 @@ export default function AdminPanel() {
               </div>
 
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={fetchInquiries}
+                  disabled={isLoadingInquiries}
+                  className="bg-white/10 hover:bg-white/20 text-white font-mono text-xs uppercase px-3.5 py-2 cut-sm transition-all flex items-center gap-1.5"
+                >
+                  {isLoadingInquiries ? 'Syncing...' : 'Refresh Leads 🔄'}
+                </button>
                 {storeData.inquiries && storeData.inquiries.length > 0 && (
                   <button
                     onClick={handleClearAllInquiriesList}
@@ -1752,9 +1819,12 @@ export default function AdminPanel() {
 
               return (
                 <div className="space-y-4">
-                  {filtered.map((inq) => (
+                  {filtered.map((inq) => {
+                    const inqId = inq._id || inq.id;
+                    const inqDate = inq.date || (inq.createdAt ? new Date(inq.createdAt).toLocaleString() : 'Recent');
+                    return (
                     <div
-                      key={inq.id}
+                      key={inqId}
                       className="bg-[#141413] border border-white/10 p-6 cut transition-all hover:border-[#f2603e]/40 space-y-4 shadow-xl"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-3">
@@ -1763,7 +1833,7 @@ export default function AdminPanel() {
                             {inq.source || 'Website Lead'}
                           </span>
                           <span className="font-mono text-xs text-[#95928a]">
-                            Received: <strong className="text-white">{inq.date}</strong>
+                            Received: <strong className="text-white">{inqDate}</strong>
                           </span>
                         </div>
 
@@ -1787,7 +1857,7 @@ export default function AdminPanel() {
                             </a>
                           )}
                           <button
-                            onClick={() => handleDeleteInquiryItem(inq.id)}
+                            onClick={() => handleDeleteInquiryItem(inqId)}
                             className="text-red-400 hover:text-red-300 font-mono text-xs px-2.5 py-1.5 border border-red-500/20 hover:border-red-500/40 cut-sm"
                           >
                             Delete ✕
@@ -1842,8 +1912,9 @@ export default function AdminPanel() {
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
               );
             })()}
 

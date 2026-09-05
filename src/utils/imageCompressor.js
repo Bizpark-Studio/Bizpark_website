@@ -10,7 +10,7 @@
  * - Ultra-fast web loading speeds
  */
 
-export async function compressImage(file, maxWidth = 1600, quality = 0.82) {
+export async function compressImage(file, maxWidth = 1280, quality = 0.78) {
   if (!file || !file.type || !file.type.startsWith('image/')) {
     return file;
   }
@@ -30,10 +30,15 @@ export async function compressImage(file, maxWidth = 1600, quality = 0.82) {
         let width = img.width;
         let height = img.height;
 
-        // Scale proportionally if width exceeds maxWidth
-        if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width);
-          width = maxWidth;
+        // Scale proportionally if width or height exceeds 1280
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
         }
 
         const canvas = document.createElement('canvas');
@@ -49,18 +54,20 @@ export async function compressImage(file, maxWidth = 1600, quality = 0.82) {
         // Draw and compress image
         ctx.drawImage(img, 0, 0, width, height);
 
-        const targetMime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        // Convert to webp if supported, or jpeg for non-transparent images
+        const targetMime = 'image/webp';
 
         canvas.toBlob(
           (blob) => {
-            if (blob && blob.size < file.size) {
-              const compressedFile = new File([blob], file.name, {
-                type: targetMime,
+            if (blob && (blob.size < file.size || file.type === 'image/png')) {
+              const safeName = file.name.replace(/\.[^/.]+$/, '') + '.webp';
+              const compressedFile = new File([blob], safeName, {
+                type: 'image/webp',
                 lastModified: Date.now()
               });
               const oldSizeKb = Math.round(file.size / 1024);
               const newSizeKb = Math.round(compressedFile.size / 1024);
-              console.log(`✓ Image compressed: ${file.name} (${oldSizeKb}KB → ${newSizeKb}KB)`);
+              console.log(`✓ Image optimized: ${file.name} (${oldSizeKb}KB → ${newSizeKb}KB)`);
               resolve(compressedFile);
             } else {
               resolve(file);
