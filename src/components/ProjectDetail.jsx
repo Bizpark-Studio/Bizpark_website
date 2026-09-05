@@ -228,7 +228,16 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
     handleStartDownload();
     const el = document.getElementById('software-download-station');
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Smooth scroll jump to contact form
+  const scrollToContactForm = (e) => {
+    if (e) e.preventDefault();
+    const el = document.getElementById('project-contact-form');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -267,66 +276,68 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
   const socials = project.socials || {};
 
   return (
-    <article className="pt-32 pb-24 bg-[#0a0a0a] min-h-screen relative overflow-hidden">
+    <article className="pt-24 sm:pt-32 pb-16 sm:pb-24 bg-[#0a0a0a] min-h-screen relative overflow-hidden">
       {/* Background graphic details */}
       <div className="absolute top-10 left-10 text-[12vw] font-bold text-white/[0.01] select-none font-mono pointer-events-none uppercase">
         {isSoftwareProject ? 'SOFTWARE' : 'CASESTUDY'}
       </div>
 
-      <div className="max-w-[1040px] mx-auto px-6 sm:px-8 relative z-10">
+      <div className="max-w-[1040px] mx-auto px-4 sm:px-8 relative z-10">
         
         {/* Navigation Breadcrumb */}
-        <div className="mb-10 flex items-center justify-between">
+        <div className="mb-6 sm:mb-10 flex flex-wrap items-center justify-between gap-3">
           <a
             href={`#category-${categoryKey}`}
-            className="font-mono text-xs text-[#f2603e] hover:text-[#ff6f4a] flex items-center gap-2 group transition-colors font-bold uppercase tracking-wider"
+            className="font-mono text-[11px] sm:text-xs text-[#f2603e] hover:text-[#ff6f4a] flex items-center gap-2 group transition-colors font-bold uppercase tracking-wider"
           >
             <span className="group-hover:-translate-x-1 transition-transform">←</span> BACK TO {categoryTag.toUpperCase()}
           </a>
-          <span className="font-mono text-xs text-[#605e58] tracking-widest uppercase">
+          <span className="font-mono text-[10px] sm:text-xs text-[#605e58] tracking-widest uppercase">
             {categoryTag} / {project.id.toUpperCase()}
           </span>
         </div>
 
         {/* Project Header Info */}
-        <div className="mb-12 border-b border-white/10 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-3 mb-3">
-              <span className="font-mono text-xs text-[#f2603e] uppercase tracking-widest font-bold">
+        <div className="mb-8 sm:mb-12 border-b border-white/10 pb-6 sm:pb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="w-full">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2.5 sm:mb-3">
+              <span className="font-mono text-[11px] sm:text-xs text-[#f2603e] uppercase tracking-widest font-bold">
                 Client / Outlets: {project.client}
               </span>
               {(project.subTag || project.tag) && (
-                <span className="font-mono text-[10px] text-white bg-[#141413] border border-white/15 px-3 py-1 cut-sm font-semibold">
+                <span className="font-mono text-[10px] text-white bg-[#141413] border border-white/15 px-2.5 py-0.5 sm:px-3 sm:py-1 cut-sm font-semibold">
                   {project.subTag || project.tag}
                 </span>
               )}
             </div>
 
-            <h1 className="font-chakra text-4xl sm:text-5xl lg:text-6xl text-white uppercase font-bold tracking-tight leading-none mb-4">
+            <h1 className="font-chakra text-3xl sm:text-5xl lg:text-6xl text-white uppercase font-bold tracking-tight leading-[1.1] mb-3 sm:mb-4 break-words">
               {project.name}
             </h1>
-            <p className="text-base text-[#95928a] font-medium max-w-3xl leading-relaxed">
+            <p className="text-sm sm:text-base text-[#95928a] font-medium max-w-3xl leading-relaxed">
               {project.description || project.shortDescription}
             </p>
           </div>
 
           {/* Action CTAs: Download & Live Website */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full md:w-auto shrink-0">
             {isSoftwareProject ? (
-              <div className="flex items-center gap-4 bg-[#141413] border border-[#f2603e]/40 px-5 py-3 cut-sm">
-                <div className="text-right font-mono">
-                  <span className="block text-[9px] text-[#605e58] uppercase">VERSION</span>
-                  <span className="text-sm font-bold text-white">{project.version || 'v7.2.5'}</span>
-                </div>
-                <div className="w-[1px] h-8 bg-white/10" />
-                <div className="font-mono">
-                  <span className="block text-[9px] text-[#605e58] uppercase">FILE SIZE</span>
-                  <span className="text-sm font-bold text-[#f2603e]">{project.fileSize || '16 MB'}</span>
+              <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-start gap-3 sm:gap-4 bg-[#141413] border border-[#f2603e]/40 p-3 sm:px-5 sm:py-3 cut-sm w-full sm:w-auto">
+                <div className="flex items-center gap-3 font-mono">
+                  <div className="text-left sm:text-right">
+                    <span className="block text-[8px] sm:text-[9px] text-[#605e58] uppercase">VERSION</span>
+                    <span className="text-xs sm:text-sm font-bold text-white">{project.version || 'v7.2.5'}</span>
+                  </div>
+                  <div className="w-[1px] h-6 sm:h-8 bg-white/10" />
+                  <div>
+                    <span className="block text-[8px] sm:text-[9px] text-[#605e58] uppercase">FILE SIZE</span>
+                    <span className="text-xs sm:text-sm font-bold text-[#f2603e]">{project.fileSize || '16 MB'}</span>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleTopDownloadClick}
-                  className="bg-[#f2603e] text-black font-chakra font-bold text-xs uppercase px-4 py-2.5 cut-sm hover:bg-[#ff6f4a] transition-all ml-2 whitespace-nowrap cursor-pointer shadow-md"
+                  className="bg-[#f2603e] text-black font-chakra font-bold text-xs uppercase px-4 py-2 sm:py-2.5 cut-sm hover:bg-[#ff6f4a] active:scale-95 transition-all whitespace-nowrap cursor-pointer shadow-md ml-auto sm:ml-2"
                 >
                   Download ⬇
                 </button>
@@ -337,7 +348,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="bg-[#f2603e] text-[#0a0a0a] hover:bg-[#ff6f4a] font-chakra font-bold text-xs uppercase tracking-wider px-6 py-4 cut-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#f2603e]/10 whitespace-nowrap"
+                  className="w-full sm:w-auto bg-[#f2603e] text-[#0a0a0a] hover:bg-[#ff6f4a] active:scale-[0.98] font-chakra font-bold text-xs uppercase tracking-wider px-6 py-3.5 sm:py-4 cut-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#f2603e]/10 whitespace-nowrap"
                 >
                   <span>Visit Live Website</span>
                   <span className="text-base leading-none">↗</span>
@@ -348,7 +359,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
         </div>
 
         {/* MULTI-MEDIA SHOWCASE SLIDER / VIDEO PLAYER */}
-        <div className="w-full aspect-[16/9] cut border border-white/15 overflow-hidden relative mb-14 bg-[#141413] shadow-2xl">
+        <div className="w-full aspect-[16/9] cut border border-white/15 overflow-hidden relative mb-8 sm:mb-14 bg-[#141413] shadow-2xl">
           <div
             className="w-full h-full flex transition-transform duration-700 ease-out"
             style={{ transform: `translateX(-${showcaseIndex * 100}%)` }}
@@ -379,27 +390,30 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
 
           {/* Slider Prev / Next Controls if > 1 item */}
           {showcaseMedia.length > 1 && (
-            <div className="absolute bottom-4 right-6 z-20 flex items-center gap-3">
+            <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-6 z-20 flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowcaseIndex((prev) => (prev === 0 ? showcaseMedia.length - 1 : prev - 1))}
-                className="w-9 h-9 rounded-full bg-black/80 border border-white/20 text-white font-mono hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/80 border border-white/20 text-white font-mono hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors text-sm sm:text-base cursor-pointer"
+                aria-label="Previous showcase slide"
               >
                 ‹
               </button>
-              <div className="flex gap-1.5">
+              <div className="flex gap-1 sm:gap-1.5">
                 {showcaseMedia.map((_, idx) => (
                   <button
                     key={idx}
                     onClick={() => setShowcaseIndex(idx)}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      showcaseIndex === idx ? 'w-6 bg-[#f2603e]' : 'w-2 bg-white/30'
+                      showcaseIndex === idx ? 'w-5 sm:w-6 bg-[#f2603e]' : 'w-1.5 sm:w-2 bg-white/30'
                     }`}
+                    aria-label={`Slide ${idx + 1}`}
                   />
                 ))}
               </div>
               <button
                 onClick={() => setShowcaseIndex((prev) => (prev + 1) % showcaseMedia.length)}
-                className="w-9 h-9 rounded-full bg-black/80 border border-white/20 text-white font-mono hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/80 border border-white/20 text-white font-mono hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors text-sm sm:text-base cursor-pointer"
+                aria-label="Next showcase slide"
               >
                 ›
               </button>
@@ -409,13 +423,13 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
 
         {/* EMBEDDED SOFTWARE DOWNLOAD & TRIAL STATION (FOR SOFTWARE SOLUTIONS) */}
         {isSoftwareProject && (
-          <div id="software-download-station" className="mb-16 bg-[#141413] border border-[#f2603e]/40 p-6 sm:p-8 cut shadow-2xl relative overflow-hidden space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-5">
+          <div id="software-download-station" className="mb-10 sm:mb-16 bg-[#141413] border border-[#f2603e]/40 p-4 sm:p-8 cut shadow-2xl relative overflow-hidden space-y-4 sm:space-y-6 scroll-mt-24">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4 sm:pb-5">
               <div>
-                <span className="font-mono text-xs text-[#f2603e] uppercase tracking-widest font-bold block mb-1">
+                <span className="font-mono text-[10px] sm:text-xs text-[#f2603e] uppercase tracking-widest font-bold block mb-1">
                   OFFICIAL SOFTWARE DOWNLOAD STATION
                 </span>
-                <h2 className="font-chakra text-2xl sm:text-3xl text-white uppercase font-bold">
+                <h2 className="font-chakra text-xl sm:text-2xl md:text-3xl text-white uppercase font-bold leading-tight">
                   Download {project.name}
                 </h2>
                 <p className="text-xs text-[#95928a] font-mono mt-1">
@@ -423,22 +437,22 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="bg-black/80 border border-white/10 text-white font-mono text-xs px-3 py-1.5 cut-sm">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="bg-black/80 border border-white/10 text-white font-mono text-[11px] sm:text-xs px-2.5 py-1 sm:px-3 sm:py-1.5 cut-sm">
                   VERSION: <span className="text-[#f2603e] font-bold">{project.version || 'v7.2.5'}</span>
                 </span>
-                <span className="bg-black/80 border border-white/10 text-white font-mono text-xs px-3 py-1.5 cut-sm">
+                <span className="bg-black/80 border border-white/10 text-white font-mono text-[11px] sm:text-xs px-2.5 py-1 sm:px-3 sm:py-1.5 cut-sm">
                   SIZE: <span className="text-emerald-400 font-bold">{project.fileSize || '16 MB'}</span>
                 </span>
               </div>
             </div>
 
             {/* Interactive Download Terminal */}
-            <div className="bg-[#0a0a0a] border border-white/10 cut-sm p-5 space-y-4">
-              <div className="flex items-center justify-between font-mono text-xs">
+            <div className="bg-[#0a0a0a] border border-white/10 cut-sm p-3.5 sm:p-5 space-y-3 sm:space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#f2603e] animate-ping" />
-                  <span className="text-white font-bold uppercase">
+                  <span className="text-white font-bold uppercase text-[11px] sm:text-xs">
                     {downloadState === 'completed'
                       ? 'DOWNLOAD COMPLETE 100%'
                       : downloadState === 'downloading'
@@ -446,13 +460,13 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                       : 'READY FOR DISPATCH'}
                   </span>
                 </div>
-                <span className="text-[#605e58] font-mono text-[11px]">
+                <span className="text-[#605e58] font-mono text-[10px] sm:text-[11px]">
                   STATUS: {downloadState.toUpperCase()}
                 </span>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-[#141413] border border-white/10 h-3 cut-sm overflow-hidden p-0.5">
+              <div className="w-full bg-[#141413] border border-white/10 h-2.5 sm:h-3 cut-sm overflow-hidden p-0.5">
                 <div
                   className="h-full bg-[#f2603e] transition-all duration-200"
                   style={{ width: `${progress}%` }}
@@ -460,7 +474,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
               </div>
 
               {/* Console logs */}
-              <div className="bg-black/80 border border-white/5 p-3 font-mono text-[11px] text-emerald-400 space-y-1 max-h-28 overflow-y-auto cut-sm">
+              <div className="bg-black/80 border border-white/5 p-2.5 sm:p-3 font-mono text-[10px] sm:text-[11px] text-emerald-400 space-y-1 max-h-28 overflow-y-auto cut-sm">
                 {logs.length > 0 ? (
                   logs.map((log, i) => <div key={i}>{log}</div>)
                 ) : (
@@ -470,11 +484,11 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                 )}
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
                 <button
                   onClick={handleStartDownload}
                   disabled={downloadState === 'downloading' || downloadState === 'connecting' || downloadState === 'extracting'}
-                  className="w-full sm:w-auto bg-[#f2603e] text-black font-chakra font-bold text-sm uppercase tracking-wider px-8 py-4 cut-sm hover:bg-[#ff6f4a] transition-all shadow-lg disabled:opacity-50"
+                  className="w-full sm:w-auto bg-[#f2603e] text-black font-chakra font-bold text-xs sm:text-sm uppercase tracking-wider px-6 sm:px-8 py-3.5 sm:py-4 cut-sm hover:bg-[#ff6f4a] active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 cursor-pointer text-center"
                 >
                   {downloadState === 'completed' ? 'Download Again ⬇' : `Download ${project.name} Now ⬇`}
                 </button>
@@ -484,7 +498,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                     href={project.downloadUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs font-mono text-[#95928a] hover:text-white underline"
+                    className="text-xs font-mono text-[#95928a] hover:text-white underline text-center sm:text-left"
                   >
                     Direct Endpoint Link ↗
                   </a>
@@ -493,31 +507,31 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             </div>
 
             {/* System Requirements & Official Social Links */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-              <div className="bg-[#0a0a0a] border border-white/10 p-4 cut-sm font-mono text-xs space-y-2">
-                <span className="text-[#f2603e] font-bold block uppercase tracking-wider text-[11px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 pt-1 sm:pt-2">
+              <div className="bg-[#0a0a0a] border border-white/10 p-3.5 sm:p-4 cut-sm font-mono text-xs space-y-2">
+                <span className="text-[#f2603e] font-bold block uppercase tracking-wider text-[10px] sm:text-[11px]">
                   SYSTEM REQUIREMENTS
                 </span>
-                <div className="flex justify-between border-b border-white/5 pb-1 text-[#95928a]">
+                <div className="flex justify-between border-b border-white/5 pb-1 text-[#95928a] text-[11px] sm:text-xs">
                   <span>Supported OS:</span>
                   <span className="text-white">Windows 10+, macOS, Linux</span>
                 </div>
-                <div className="flex justify-between border-b border-white/5 pb-1 text-[#95928a]">
+                <div className="flex justify-between border-b border-white/5 pb-1 text-[#95928a] text-[11px] sm:text-xs">
                   <span>Memory (RAM):</span>
                   <span className="text-white">4GB RAM (8GB Recommended)</span>
                 </div>
-                <div className="flex justify-between text-[#95928a]">
+                <div className="flex justify-between text-[#95928a] text-[11px] sm:text-xs">
                   <span>Disk Storage:</span>
                   <span className="text-white">200 MB Free Space</span>
                 </div>
               </div>
 
               {/* Official Social Media Links */}
-              <div className="bg-[#0a0a0a] border border-white/10 p-4 cut-sm font-mono text-xs space-y-2">
-                <span className="text-[#f2603e] font-bold block uppercase tracking-wider text-[11px]">
+              <div className="bg-[#0a0a0a] border border-white/10 p-3.5 sm:p-4 cut-sm font-mono text-xs space-y-2">
+                <span className="text-[#f2603e] font-bold block uppercase tracking-wider text-[10px] sm:text-[11px]">
                   OFFICIAL CHANNELS &amp; COMMUNITY
                 </span>
-                <p className="text-[#605e58] text-[11px]">
+                <p className="text-[#605e58] text-[10px] sm:text-[11px]">
                   Follow dedicated channels for user guides, update announcements, and technical tutorials:
                 </p>
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -559,20 +573,20 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
         )}
 
         {/* Case Study Details Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 mb-10 sm:mb-16">
           
           {/* Main Case Study Column */}
-          <div className="lg:col-span-8 space-y-10">
+          <div className="lg:col-span-8 space-y-8 sm:space-y-10">
             
             {/* Overview */}
             <div>
-              <h2 className="font-chakra text-xl uppercase tracking-wider text-white mb-4 border-l-2 border-[#f2603e] pl-3 font-bold">
+              <h2 className="font-chakra text-lg sm:text-xl uppercase tracking-wider text-white mb-3 sm:mb-4 border-l-2 border-[#f2603e] pl-3 font-bold">
                 Project Overview &amp; Strategy
               </h2>
-              <p className="text-[#95928a] text-sm leading-relaxed mb-4">
+              <p className="text-[#95928a] text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4">
                 {project.description || project.shortDescription}
               </p>
-              <p className="text-[#95928a] text-sm leading-relaxed">
+              <p className="text-[#95928a] text-xs sm:text-sm leading-relaxed">
                 Working closely with the client team, Bizpark Studio engineered this solution from initial architectural mapping to production deployment. The final outcome achieved high operational efficiency, optimized conversions, and delivered a top-tier user experience.
               </p>
             </div>
@@ -580,22 +594,22 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             {/* HORIZONTAL SLIDING PROCESS PHOTOS GALLERY */}
             {processPhotos.length > 0 && (
               <div className="pt-6 border-t border-white/10">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 sm:mb-6 gap-2">
                   <div>
-                    <span className="font-mono text-xs text-[#f2603e] uppercase tracking-widest block font-bold mb-1">
+                    <span className="font-mono text-[10px] sm:text-xs text-[#f2603e] uppercase tracking-widest block font-bold mb-1">
                       BEHIND THE SCENES
                     </span>
-                    <h2 className="font-chakra text-2xl uppercase tracking-wider text-white font-bold">
+                    <h2 className="font-chakra text-xl sm:text-2xl uppercase tracking-wider text-white font-bold leading-tight">
                       Development &amp; Making Process Photos
                     </h2>
                   </div>
-                  <span className="font-mono text-xs text-[#605e58]">
+                  <span className="font-mono text-[11px] sm:text-xs text-[#605e58] shrink-0">
                     Snapshot {processIndex + 1} of {processPhotos.length}
                   </span>
                 </div>
 
                 {/* SLIDING CAROUSEL CONTAINER */}
-                <div className="relative bg-[#141413] border border-[#f2603e]/40 cut p-6 space-y-5 shadow-2xl overflow-hidden">
+                <div className="relative bg-[#141413] border border-[#f2603e]/40 cut p-3.5 sm:p-6 space-y-4 sm:space-y-5 shadow-2xl overflow-hidden">
                   
                   {/* Slider Stage */}
                   <div className="relative aspect-[16/9] w-full cut border border-white/10 overflow-hidden bg-black/80">
@@ -610,7 +624,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                             alt={proc.title}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute top-3 left-3 bg-black/90 backdrop-blur-md font-mono text-[10px] text-[#f2603e] px-3 py-1 border border-[#f2603e]/40 font-bold uppercase">
+                          <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 bg-black/90 backdrop-blur-md font-mono text-[9px] sm:text-[10px] text-[#f2603e] px-2.5 py-1 sm:px-3 sm:py-1 border border-[#f2603e]/40 font-bold uppercase">
                             PHASE 0{idx + 1} SNAPSHOT
                           </div>
                         </div>
@@ -622,13 +636,15 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                       <>
                         <button
                           onClick={() => setProcessIndex((prev) => (prev === 0 ? processPhotos.length - 1 : prev - 1))}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 border border-white/20 text-white font-mono text-lg hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors z-20"
+                          className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/80 border border-white/20 text-white font-mono text-base sm:text-lg hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors z-20 cursor-pointer"
+                          aria-label="Previous snapshot"
                         >
                           ‹
                         </button>
                         <button
                           onClick={() => setProcessIndex((prev) => (prev + 1) % processPhotos.length)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/80 border border-white/20 text-white font-mono text-lg hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors z-20"
+                          className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/80 border border-white/20 text-white font-mono text-base sm:text-lg hover:border-[#f2603e] hover:text-[#f2603e] flex items-center justify-center transition-colors z-20 cursor-pointer"
+                          aria-label="Next snapshot"
                         >
                           ›
                         </button>
@@ -639,10 +655,10 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                   {/* Active Photo Caption & Notes */}
                   {processPhotos[processIndex] && (
                     <div className="space-y-1">
-                      <h4 className="font-chakra text-lg text-white font-bold uppercase">
+                      <h4 className="font-chakra text-base sm:text-lg text-white font-bold uppercase">
                         {processPhotos[processIndex].title}
                       </h4>
-                      <p className="text-xs text-[#95928a] font-mono leading-relaxed">
+                      <p className="text-[11px] sm:text-xs text-[#95928a] font-mono leading-relaxed">
                         {processPhotos[processIndex].note}
                       </p>
                     </div>
@@ -650,12 +666,12 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
 
                   {/* Horizontal Thumbnail Strip */}
                   {processPhotos.length > 1 && (
-                    <div className="flex items-center gap-3 pt-3 border-t border-white/10 overflow-x-auto pb-1 scrollbar-none">
+                    <div className="flex items-center gap-2 sm:gap-3 pt-2.5 sm:pt-3 border-t border-white/10 overflow-x-auto pb-1 scrollbar-none">
                       {processPhotos.map((proc, idx) => (
                         <button
                           key={idx}
                           onClick={() => setProcessIndex(idx)}
-                          className={`relative flex-shrink-0 w-20 aspect-[16/10] cut-sm overflow-hidden border transition-all ${
+                          className={`relative flex-shrink-0 w-16 sm:w-20 aspect-[16/10] cut-sm overflow-hidden border transition-all cursor-pointer ${
                             processIndex === idx
                               ? 'border-[#f2603e] ring-1 ring-[#f2603e] opacity-100'
                               : 'border-white/10 opacity-50 hover:opacity-80'
@@ -674,18 +690,18 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             {/* Key Deliverables / Scope */}
             {project.features && (
               <div className="pt-4 border-t border-white/10">
-                <h2 className="font-chakra text-xl uppercase tracking-wider text-white mb-5 border-l-2 border-[#f2603e] pl-3 font-bold">
+                <h2 className="font-chakra text-lg sm:text-xl uppercase tracking-wider text-white mb-4 sm:mb-5 border-l-2 border-[#f2603e] pl-3 font-bold">
                   Scope &amp; Key Deliverables
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {project.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-start gap-3 bg-[#141413] border border-white/5 p-4 cut-sm">
+                    <div key={idx} className="flex items-start gap-2.5 sm:gap-3 bg-[#141413] border border-white/5 p-3.5 sm:p-4 cut-sm">
                       <span className="w-1.5 h-1.5 bg-[#f2603e] mt-1.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-chakra text-sm uppercase text-white font-bold tracking-wide">
+                        <h4 className="font-chakra text-xs sm:text-sm uppercase text-white font-bold tracking-wide">
                           {feat}
                         </h4>
-                        <p className="text-[11px] text-[#605e58] font-mono mt-0.5">
+                        <p className="text-[10px] sm:text-[11px] text-[#605e58] font-mono mt-0.5">
                           Production Ready &amp; Verified
                         </p>
                       </div>
@@ -698,15 +714,15 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
           </div>
 
           {/* Sidebar Meta Column */}
-          <div className="lg:col-span-4 space-y-8 lg:border-l lg:border-white/10 lg:pl-8">
+          <div className="lg:col-span-4 space-y-6 sm:space-y-8 lg:border-l lg:border-white/10 lg:pl-8 pt-8 lg:pt-0 border-t border-white/10 lg:border-t-0">
             
             {/* Live Website Link Block */}
             {project.websiteUrl && project.websiteUrl !== 'https-[#]' && (
-              <div className="bg-[#141413] border border-[#f2603e]/40 p-6 cut-sm space-y-3">
-                <span className="font-mono text-[10px] text-[#f2603e] font-bold uppercase tracking-wider block">
+              <div className="bg-[#141413] border border-[#f2603e]/40 p-4 sm:p-6 cut-sm space-y-2.5 sm:space-y-3">
+                <span className="font-mono text-[9px] sm:text-[10px] text-[#f2603e] font-bold uppercase tracking-wider block">
                   LIVE DEPLOYMENT
                 </span>
-                <h4 className="font-chakra text-base text-white uppercase font-bold">
+                <h4 className="font-chakra text-sm sm:text-base text-white uppercase font-bold">
                   Inspect Production Site
                 </h4>
                 <p className="text-xs text-[#95928a] leading-relaxed">
@@ -716,7 +732,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                   href={project.websiteUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="w-full text-center inline-flex items-center justify-between bg-[#f2603e] text-[#0a0a0a] font-chakra font-bold text-xs uppercase tracking-wider py-3 px-4 cut-sm hover:bg-[#ff6f4a] transition-all"
+                  className="w-full text-center inline-flex items-center justify-between bg-[#f2603e] text-[#0a0a0a] font-chakra font-bold text-xs uppercase tracking-wider py-3 px-4 cut-sm hover:bg-[#ff6f4a] active:scale-[0.98] transition-all"
                 >
                   <span>Visit Live Website</span>
                   <span>↗</span>
@@ -727,12 +743,12 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             {/* Tech Stack */}
             {project.tech && (
               <div>
-                <h3 className="font-mono text-xs text-[#605e58] uppercase tracking-wider mb-4 font-bold">
+                <h3 className="font-mono text-[11px] sm:text-xs text-[#605e58] uppercase tracking-wider mb-3 font-bold">
                   Tech Stack &amp; Tools Used
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {project.tech.map((t) => (
-                    <span key={t} className="text-xs font-mono text-[#f5f4ef] bg-[#141413] px-3.5 py-1.5 border border-white/10 rounded-sm">
+                    <span key={t} className="text-[11px] sm:text-xs font-mono text-[#f5f4ef] bg-[#141413] px-3 py-1.5 border border-white/10 rounded-sm">
                       {t}
                     </span>
                   ))}
@@ -741,38 +757,42 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
             )}
 
             {/* Project Specs */}
-            <div className="border-t border-white/10 pt-8 space-y-4 font-mono text-xs">
-              <div>
-                <span className="block text-[10px] text-[#605e58] uppercase">Client Entity</span>
-                <span className="text-sm font-semibold text-white">{project.client}</span>
-              </div>
-              <div>
-                <span className="block text-[10px] text-[#605e58] uppercase font-bold">Category</span>
-                <span className="text-sm font-semibold text-[#f2603e]">{categoryTag}</span>
-              </div>
-              {(project.subTag || project.tag) && (
+            <div className="border-t border-white/10 pt-6 sm:pt-8 font-mono text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-3 sm:gap-4">
                 <div>
-                  <span className="block text-[10px] text-[#605e58] uppercase">Industry Sub-Tag</span>
-                  <span className="text-sm font-semibold text-white">{project.subTag || project.tag}</span>
+                  <span className="block text-[9px] sm:text-[10px] text-[#605e58] uppercase">Client Entity</span>
+                  <span className="text-xs sm:text-sm font-semibold text-white">{project.client}</span>
                 </div>
-              )}
+                <div>
+                  <span className="block text-[9px] sm:text-[10px] text-[#605e58] uppercase font-bold">Category</span>
+                  <span className="text-xs sm:text-sm font-semibold text-[#f2603e]">{categoryTag}</span>
+                </div>
+                {(project.subTag || project.tag) && (
+                  <div>
+                    <span className="block text-[9px] sm:text-[10px] text-[#605e58] uppercase">Industry Sub-Tag</span>
+                    <span className="text-xs sm:text-sm font-semibold text-white">{project.subTag || project.tag}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Direct CTA */}
-            <div className="border-t border-white/10 pt-8">
-              <div className="bg-[#141413] border border-white/10 p-6 cut-sm space-y-4">
-                <h4 className="font-chakra text-lg text-white uppercase font-bold">
+            <div className="border-t border-white/10 pt-6 sm:pt-8">
+              <div className="bg-[#141413] border border-white/10 p-4 sm:p-6 cut-sm space-y-3 sm:space-y-4">
+                <h4 className="font-chakra text-base sm:text-lg text-white uppercase font-bold">
                   Need a similar project?
                 </h4>
                 <p className="text-xs text-[#95928a] leading-relaxed">
                   Scroll down to fill out our quick requirement form and start working with Bizpark Studio today.
                 </p>
-                <a
-                  href="#project-contact-form"
-                  className="w-full text-center inline-block bg-[#f2603e] text-[#0a0a0a] font-chakra font-bold text-xs uppercase tracking-wider py-3.5 cut-sm hover:bg-[#ff6f4a] transition-all"
+                <button
+                  type="button"
+                  onClick={scrollToContactForm}
+                  className="w-full text-center inline-flex items-center justify-center gap-2 bg-[#f2603e] text-[#0a0a0a] font-chakra font-bold text-xs uppercase tracking-wider py-3.5 cut-sm hover:bg-[#ff6f4a] active:scale-[0.98] transition-all cursor-pointer shadow-lg shadow-[#f2603e]/15"
                 >
-                  Jump to Contact Form ↓
-                </a>
+                  <span>Jump to Contact Form</span>
+                  <span className="font-bold">↓</span>
+                </button>
               </div>
             </div>
 
@@ -781,28 +801,28 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
         </div>
 
         {/* Dedicated End-of-Page Contact Form */}
-        <section id="project-contact-form" className="border-t border-white/10 pt-16 mt-16">
-          <div className="bg-[#141413] border border-[#f2603e]/50 p-8 sm:p-10 cut relative shadow-2xl">
-            <div className="max-w-2xl mb-8">
-              <div className="inline-flex items-center gap-2.5 text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-2 font-bold">
+        <section id="project-contact-form" className="border-t border-white/10 pt-10 sm:pt-16 mt-10 sm:mt-16 scroll-mt-24">
+          <div className="bg-[#141413] border border-[#f2603e]/50 p-5 sm:p-8 md:p-10 cut relative shadow-2xl">
+            <div className="max-w-2xl mb-6 sm:mb-8">
+              <div className="inline-flex items-center gap-2 text-[10px] sm:text-xs text-[#f2603e] font-mono uppercase tracking-widest mb-1.5 sm:mb-2 font-bold">
                 <span className="w-4 h-[1px] bg-[#f2603e]" />
                 START A SIMILAR {categoryTag.toUpperCase()} PROJECT
               </div>
-              <h2 className="font-chakra text-3xl sm:text-4xl text-white uppercase font-bold">
+              <h2 className="font-chakra text-2xl sm:text-3xl md:text-4xl text-white uppercase font-bold leading-tight">
                 Let's Build Something Exceptional Together
               </h2>
-              <p className="text-sm text-[#95928a] mt-2">
+              <p className="text-xs sm:text-sm text-[#95928a] mt-2 leading-relaxed">
                 Inspired by <span className="text-white font-semibold">{project.name}</span>? Fill out this inquiry form below to get a custom timeline and cost estimate from our engineering team.
               </p>
             </div>
 
             {formSubmitted ? (
-              <div className="bg-[#0a0a0a] border border-[#f2603e] p-8 text-center cut-sm space-y-5 animate-fadeIn">
+              <div className="bg-[#0a0a0a] border border-[#f2603e] p-6 sm:p-8 text-center cut-sm space-y-4 sm:space-y-5 animate-fadeIn">
                 <div className="w-12 h-12 rounded-full bg-[#f2603e]/20 text-[#f2603e] mx-auto flex items-center justify-center font-mono font-bold text-xl">
                   ✓
                 </div>
-                <h3 className="font-chakra text-2xl text-white uppercase font-bold">Requirement Submitted &amp; Logged!</h3>
-                <p className="text-sm text-[#95928a] max-w-md mx-auto">
+                <h3 className="font-chakra text-xl sm:text-2xl text-white uppercase font-bold">Requirement Submitted &amp; Logged!</h3>
+                <p className="text-xs sm:text-sm text-[#95928a] max-w-md mx-auto leading-relaxed">
                   Thank you for reaching out regarding your {categoryTag} project. Your specifications have been safely logged into our Admin Leads Vault, and our engineering leads will review your inquiry within 24 hours.
                 </p>
                 {projectWhatsappUrl && (
@@ -811,7 +831,7 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                       href={projectWhatsappUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 bg-[#25D366] text-black font-chakra font-bold text-xs uppercase px-6 py-3.5 cut-sm hover:brightness-110 transition-all shadow-lg"
+                      className="inline-flex items-center justify-center gap-2 bg-[#25D366] text-black font-chakra font-bold text-xs uppercase px-5 py-3 sm:px-6 sm:py-3.5 cut-sm hover:brightness-110 transition-all shadow-lg w-full sm:w-auto"
                     >
                       <span>💬 Chat with Studio on WhatsApp Now →</span>
                     </a>
@@ -820,58 +840,58 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                 <div className="pt-2">
                   <button
                     onClick={() => setFormSubmitted(false)}
-                    className="bg-[#141413] hover:bg-white/10 text-[#f5f4ef] border border-white/10 font-mono text-xs uppercase tracking-wider px-6 py-2.5 cut-sm"
+                    className="bg-[#141413] hover:bg-white/10 text-[#f5f4ef] border border-white/10 font-mono text-xs uppercase tracking-wider px-6 py-2.5 cut-sm cursor-pointer"
                   >
                     Send Another Message
                   </button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleFormSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">Your Name *</label>
+                    <label className="block font-mono text-[11px] sm:text-xs text-[#95928a] uppercase mb-1.5 sm:mb-2">Your Name *</label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Alex Mercer"
                       value={contactData.name}
                       onChange={(e) => setContactData({ ...contactData, name: e.target.value })}
-                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-4 py-3 text-xs font-mono text-white outline-none cut-sm"
+                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none cut-sm transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">Email Address *</label>
+                    <label className="block font-mono text-[11px] sm:text-xs text-[#95928a] uppercase mb-1.5 sm:mb-2">Email Address *</label>
                     <input
                       type="email"
                       required
                       placeholder="alex@company.com"
                       value={contactData.email}
                       onChange={(e) => setContactData({ ...contactData, email: e.target.value })}
-                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-4 py-3 text-xs font-mono text-white outline-none cut-sm"
+                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none cut-sm transition-colors"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">Phone Number</label>
+                    <label className="block font-mono text-[11px] sm:text-xs text-[#95928a] uppercase mb-1.5 sm:mb-2">Phone Number</label>
                     <input
                       type="tel"
                       placeholder="+94 77 123 4567"
                       value={contactData.phone}
                       onChange={(e) => setContactData({ ...contactData, phone: e.target.value })}
-                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-4 py-3 text-xs font-mono text-white outline-none cut-sm"
+                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none cut-sm transition-colors"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">Project Budget</label>
+                    <label className="block font-mono text-[11px] sm:text-xs text-[#95928a] uppercase mb-1.5 sm:mb-2">Project Budget</label>
                     <select
                       value={contactData.budget}
                       onChange={(e) => setContactData({ ...contactData, budget: e.target.value })}
-                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-4 py-3 text-xs font-mono text-white outline-none cut-sm"
+                      className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] px-3.5 py-2.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-white outline-none cut-sm transition-colors"
                     >
                       <option value="Under $1,000">Under $1,000</option>
                       <option value="$1,000 - $3,000">$1,000 - $3,000</option>
@@ -882,21 +902,21 @@ Copyright (c) 2026 bizparkstudio. All rights reserved.
                 </div>
 
                 <div>
-                  <label className="block font-mono text-xs text-[#95928a] uppercase mb-2">Project Scope &amp; Details *</label>
+                  <label className="block font-mono text-[11px] sm:text-xs text-[#95928a] uppercase mb-1.5 sm:mb-2">Project Scope &amp; Details *</label>
                   <textarea
                     required
                     rows="4"
                     placeholder={`Tell us about your ${categoryTag} requirements, brand goals, or feature specs...`}
                     value={contactData.message}
                     onChange={(e) => setContactData({ ...contactData, message: e.target.value })}
-                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-4 text-xs font-mono text-white outline-none cut-sm"
+                    className="w-full bg-[#0a0a0a] border border-white/10 focus:border-[#f2603e] p-3.5 sm:p-4 text-xs sm:text-sm font-mono text-white outline-none cut-sm transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={formSubmitting}
-                  className="bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-sm uppercase tracking-wider px-8 py-4 cut-sm transition-all duration-200 shadow-lg shadow-[#f2603e]/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full sm:w-auto bg-[#f2603e] hover:bg-[#ff6f4a] text-black font-chakra font-bold text-xs sm:text-sm uppercase tracking-wider px-6 sm:px-8 py-3.5 sm:py-4 cut-sm transition-all duration-200 shadow-lg shadow-[#f2603e]/10 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] cursor-pointer"
                 >
                   {formSubmitting ? (
                     <>
