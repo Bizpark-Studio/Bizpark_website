@@ -129,7 +129,9 @@ async function sendInquiryEmail(inquiry) {
 const app = express();
 const PORT = process.env.PORT || 5001;
 const DEFAULT_MONGODB_URI = 'mongodb+srv://anuradha:anuradha@anuradha.av9fjk8.mongodb.net/bizpark_studio?retryWrites=true&w=majority';
-const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
+const rawUri = (process.env.MONGODB_URI && process.env.MONGODB_URI.trim()) || DEFAULT_MONGODB_URI;
+// Strip any accidental leading/trailing quotes or whitespace from Vercel env var input
+const MONGODB_URI = rawUri.replace(/^["']|["']$/g, '').trim();
 
 app.use(cors({
   origin: '*',
@@ -189,48 +191,47 @@ async function connectDB() {
     return true;
   }
   if (!MONGODB_URI) {
-    console.warn('⚠️ MONGODB_URI not found in environment or fallback');
+    cached.lastError = 'MONGODB_URI is missing';
     return false;
   }
 
-  if (!cached.promise) {
-    const opts = {
-      dbName: 'bizpark_studio',
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 8000,
-      bufferCommands: false
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (m) => {
-      cached.lastError = null;
-      console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
-
-      // Seed database if empty
-      try {
-        const existing = await SiteData.findOne({ key: 'main_site_data' });
-        if (!existing) {
-          console.log('🌱 Seeding initial site data into MongoDB Atlas...');
-          await SiteData.create(defaultSeedData);
-          console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
-        }
-      } catch (seedErr) {
-        console.error('Seed check error:', seedErr.message);
-      }
-      return m;
-    }).catch((err) => {
-      cached.promise = null;
-      cached.lastError = err.message;
-      console.error('❌ MongoDB Atlas connection error:', err.message);
-      return null;
-    });
-  }
-
   try {
+    if (!cached.promise) {
+      const opts = {
+        dbName: 'bizpark_studio',
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 8000
+      };
+
+      cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (m) => {
+        cached.lastError = null;
+        console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
+
+        // Seed database if empty
+        try {
+          const existing = await SiteData.findOne({ key: 'main_site_data' });
+          if (!existing) {
+            console.log('🌱 Seeding initial site data into MongoDB Atlas...');
+            await SiteData.create(defaultSeedData);
+            console.log('✓ Initial site data successfully seeded into MongoDB Atlas!');
+          }
+        } catch (seedErr) {
+          console.error('Seed check error:', seedErr.message);
+        }
+        return m;
+      }).catch((err) => {
+        cached.promise = null;
+        cached.lastError = `${err.name || 'Error'}: ${err.message}`;
+        console.error('❌ MongoDB Atlas connection error:', err.message);
+        throw err;
+      });
+    }
+
     cached.conn = await cached.promise;
     return !!cached.conn;
   } catch (err) {
     cached.promise = null;
-    cached.lastError = err.message;
+    cached.lastError = `${err.name || 'ConnectionError'}: ${err.message}`;
     return false;
   }
 }
@@ -260,19 +261,28 @@ const apiRouter = express.Router();
 
 // 1. HEALTH ENDPOINT
 apiRouter.get('/health', async (req, res) => {
+  let directConnectError = null;
   if (mongoose.connection.readyState !== 1) {
     try {
       await connectDB();
-    } catch {}
+    } catch (e) {
+      directConnectError = `${e.name}: ${e.message}`;
+    }
   }
   const isDbReady = mongoose.connection.readyState === 1;
+  const maskedUri = MONGODB_URI ? MONGODB_URI.replace(/:([^:@]+)@/, ':***@') : 'none';
   res.json({
     status: 'ok',
     database: isDbReady ? 'connected' : 'disconnected',
     readyState: mongoose.connection.readyState,
     databaseName: 'bizpark_studio',
     environment: process.env.VERCEL ? 'vercel_serverless' : 'node_server',
-    lastError: cached.lastError,
+    mongoUriHost: maskedUri,
+    hasCustomEnvVar: Boolean(process.env.MONGODB_URI),
+    lastError: cached.lastError || directConnectError || null,
+    timestamp: new Date().toISOString()
+  });
+});
     timestamp: new Date().toISOString()
   });
 });
