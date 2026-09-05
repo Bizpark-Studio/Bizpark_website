@@ -283,9 +283,6 @@ apiRouter.get('/health', async (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
-    timestamp: new Date().toISOString()
-  });
-});
 
 // 2. IMAGE UPLOAD ENDPOINT
 apiRouter.post('/upload-image', upload.single('image'), (req, res) => {
@@ -347,7 +344,7 @@ apiRouter.post('/data', async (req, res) => {
     const saved = await SiteData.findOneAndUpdate(
       { key: 'main_site_data' },
       { $set: updatePayload },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     res.json({ success: true, data: saved });
   } catch (err) {
