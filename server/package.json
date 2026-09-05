@@ -1,0 +1,12 @@
+{
+  "name": "bizpark-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "start:dev": "node index.js",
+    "server": "node index.js"
+  }
+}
