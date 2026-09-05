@@ -133,10 +133,6 @@ export default function Hero() {
               onMouseLeave={handleMouseLeave}
               className="relative w-full max-w-[620px] cursor-pointer perspective-1000 group"
             >
-              {/* Corner Plus Markers */}
-              <span className="absolute -top-6 left-0 font-mono text-[11px] text-[#605e58] tracking-widest uppercase">
-                // HOMEPAGE HERO
-              </span>
               <span className="absolute -bottom-6 right-0 font-mono text-[11px] text-[#f2603e] tracking-widest uppercase">
                 BIZPARKSTUDIO
               </span>
