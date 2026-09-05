@@ -575,28 +575,43 @@ export function getStoreData() {
 
 // Dynamic Backend URL Resolver (supports local dev, custom live backend, runtime-config, and same-origin hosting)
 export function getBackendUrl() {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && window.location) {
+    const isRemoteHost = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
     // 1. Manually configured backend URL saved from Admin Panel Settings
     const custom = localStorage.getItem('bizpark_backend_url');
     if (custom && custom.trim()) {
-      return custom.trim().replace(/\/+$/, '');
+      const trimmed = custom.trim().replace(/\/+$/, '');
+      // If hosted remotely and custom points to localhost, safely ignore it to prevent breakage
+      if (!isRemoteHost || (!trimmed.includes('localhost') && !trimmed.includes('127.0.0.1'))) {
+        return trimmed;
+      }
     }
+
     // 2. Global runtime config loaded from /runtime-config.json
     if (window.__BIZPARK_BACKEND_URL__ && window.__BIZPARK_BACKEND_URL__.trim()) {
-      return window.__BIZPARK_BACKEND_URL__.trim().replace(/\/+$/, '');
+      const runtimeUrl = window.__BIZPARK_BACKEND_URL__.trim().replace(/\/+$/, '');
+      if (!isRemoteHost || (!runtimeUrl.includes('localhost') && !runtimeUrl.includes('127.0.0.1'))) {
+        return runtimeUrl;
+      }
     }
-  }
-  // 3. Build-time Vite environment variable
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
-    return import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '');
-  }
-  // 4. If hosted on a remote domain in production (e.g. cPanel, Render, VPS, or reverse proxy)
-  if (typeof window !== 'undefined' && window.location) {
-    const host = window.location.hostname;
-    if (host !== 'localhost' && host !== '127.0.0.1') {
+
+    // 3. If hosted on a remote domain in production (e.g. Vercel, Netlify, Render, VPS, or reverse proxy)
+    // ALWAYS prioritize same-origin over baked-in localhost Vite variables
+    if (isRemoteHost) {
+      const viteEnvUrl = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL;
+      if (viteEnvUrl && !viteEnvUrl.includes('localhost') && !viteEnvUrl.includes('127.0.0.1')) {
+        return viteEnvUrl.replace(/\/+$/, '');
+      }
       return window.location.origin;
     }
   }
+
+  // 4. Build-time Vite environment variable for local development
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '');
+  }
+
   // 5. Default for local development
   return 'http://localhost:5001';
 }
@@ -735,7 +750,7 @@ export function deleteInquiry(id) {
   data.inquiries = (data.inquiries || []).filter((inq) => inq.id !== id);
   saveStoreData(data);
 
-  fetch(`${BACKEND_URL}/api/inquiries/${id}`, {
+  fetch(`${getBackendUrl()}/api/inquiries/${id}`, {
     method: 'DELETE'
   }).catch(() => {});
 
@@ -747,7 +762,7 @@ export function clearAllInquiries() {
   data.inquiries = [];
   saveStoreData(data);
 
-  fetch(`${BACKEND_URL}/api/inquiries`, {
+  fetch(`${getBackendUrl()}/api/inquiries`, {
     method: 'DELETE'
   }).catch(() => {});
 

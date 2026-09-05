@@ -128,7 +128,8 @@ async function sendInquiryEmail(inquiry) {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+const DEFAULT_MONGODB_URI = 'mongodb+srv://anuradha:anuradha@anuradha.av9fjk8.mongodb.net/bizpark_studio?retryWrites=true&w=majority';
+const MONGODB_URI = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
 
 app.use(cors({
   origin: '*',
@@ -167,7 +168,7 @@ const storage = isVercel
 
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
       cb(null, true);
@@ -194,23 +195,24 @@ app.post('/api/upload-image', upload.single('image'), (req, res) => {
 });
 
 // Connect to MongoDB Atlas (Serverless & Persistent mode)
-let isConnected = false;
 let dbConnectPromise = null;
+let lastConnectionError = null;
 
 async function connectDB() {
-  if (!MONGODB_URI) {
-    console.warn('⚠️ MONGODB_URI not found in environment');
-    return;
-  }
   if (mongoose.connection.readyState === 1) {
-    isConnected = true;
-    return;
+    return true;
+  }
+  if (!MONGODB_URI) {
+    console.warn('⚠️ MONGODB_URI not found in environment or fallback');
+    return false;
   }
   if (!dbConnectPromise) {
     dbConnectPromise = mongoose.connect(MONGODB_URI, {
-      dbName: 'bizpark_studio'
+      dbName: 'bizpark_studio',
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 10000
     }).then(async () => {
-      isConnected = true;
+      lastConnectionError = null;
       console.log('✓ Successfully connected to MongoDB Atlas (Database: bizpark_studio)');
 
       // Seed database if empty
@@ -224,22 +226,26 @@ async function connectDB() {
       } catch (seedErr) {
         console.error('Seed error:', seedErr);
       }
+      return true;
     }).catch((err) => {
       dbConnectPromise = null;
-      isConnected = false;
+      lastConnectionError = err.message;
       console.error('❌ MongoDB Atlas connection error:', err.message);
+      return false;
     });
   }
-  await dbConnectPromise;
+  return await dbConnectPromise;
 }
 
-// Ensure database connection middleware for serverless invocations
+// Ensure database connection middleware for API invocations
 app.use(async (req, res, next) => {
-  if (MONGODB_URI && mongoose.connection.readyState !== 1) {
-    try {
-      await connectDB();
-    } catch (e) {
-      console.error('Database connection middleware error:', e);
+  if (req.path.startsWith('/api')) {
+    if (mongoose.connection.readyState !== 1) {
+      try {
+        await connectDB();
+      } catch (e) {
+        console.error('Database connection middleware error:', e);
+      }
     }
   }
   next();
@@ -248,11 +254,21 @@ app.use(async (req, res, next) => {
 // Kick off initial connection attempt
 connectDB();
 
-// API ROUTES
-app.get('/api/health', (req, res) => {
+// API HEALTH ENDPOINT (with full diagnostics)
+app.get('/api/health', async (req, res) => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch {}
+  }
+  const isDbReady = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
-    database: isConnected ? 'connected' : 'disconnected',
+    database: isDbReady ? 'connected' : 'disconnected',
+    readyState: mongoose.connection.readyState,
+    databaseName: 'bizpark_studio',
+    environment: process.env.VERCEL ? 'vercel_serverless' : 'node_server',
+    lastError: lastConnectionError,
     timestamp: new Date().toISOString()
   });
 });
@@ -260,7 +276,11 @@ app.get('/api/health', (req, res) => {
 // GET SITE DATA
 app.get('/api/data', async (req, res) => {
   try {
-    if (!isConnected) {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('MongoDB not ready, returning fallback data');
       return res.json(defaultSeedData);
     }
     let data = await SiteData.findOne({ key: 'main_site_data' });
@@ -277,8 +297,14 @@ app.get('/api/data', async (req, res) => {
 // SAVE / UPDATE SITE DATA
 app.post('/api/data', async (req, res) => {
   try {
-    if (!isConnected) {
-      return res.status(503).json({ error: 'MongoDB disconnected' });
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        error: 'MongoDB Atlas is disconnected. Please check connection.',
+        lastError: lastConnectionError
+      });
     }
     const updatePayload = {
       categories: req.body.categories,
@@ -296,14 +322,17 @@ app.post('/api/data', async (req, res) => {
     res.json({ success: true, data: saved });
   } catch (err) {
     console.error('Error saving site data to MongoDB:', err);
-    res.status(500).json({ error: 'Failed to save site data' });
+    res.status(500).json({ error: 'Failed to save site data: ' + err.message });
   }
 });
 
 // GET ALL INQUIRIES
 app.get('/api/inquiries', async (req, res) => {
   try {
-    if (!isConnected) {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    if (mongoose.connection.readyState !== 1) {
       return res.json([]);
     }
     const inquiries = await Inquiry.find().sort({ createdAt: -1 });
@@ -317,8 +346,11 @@ app.get('/api/inquiries', async (req, res) => {
 // SUBMIT NEW INQUIRY
 app.post('/api/inquiries', async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
     let savedInq = null;
-    if (isConnected) {
+    if (mongoose.connection.readyState === 1) {
       savedInq = await Inquiry.create({
         name: req.body.name,
         email: req.body.email,
@@ -384,10 +416,12 @@ app.post('/api/test-email', async (req, res) => {
 // DELETE INQUIRY
 app.delete('/api/inquiries/:id', async (req, res) => {
   try {
-    if (!isConnected) {
-      return res.json({ success: true });
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
     }
-    await Inquiry.findByIdAndDelete(req.params.id);
+    if (mongoose.connection.readyState === 1) {
+      await Inquiry.findByIdAndDelete(req.params.id);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Delete inquiry error:', err);
@@ -398,10 +432,12 @@ app.delete('/api/inquiries/:id', async (req, res) => {
 // CLEAR ALL INQUIRIES
 app.delete('/api/inquiries', async (req, res) => {
   try {
-    if (!isConnected) {
-      return res.json({ success: true });
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
     }
-    await Inquiry.deleteMany({});
+    if (mongoose.connection.readyState === 1) {
+      await Inquiry.deleteMany({});
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Clear inquiries error:', err);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStoreData, saveStoreData, resetStoreData, deleteInquiry, clearAllInquiries, getBackendUrl, syncFromBackend } from '../data/store';
+import { compressImage } from '../utils/imageCompressor';
 
 const BACKEND_URL = getBackendUrl();
 
@@ -87,15 +88,15 @@ export default function AdminPanel() {
       if (res.ok) {
         const data = await res.json();
         if (data.database === 'connected') {
-          setCloudTestStatus(`✓ SUCCESS! Connected to MongoDB Atlas via ${backendUrl}`);
+          setCloudTestStatus(`✓ SUCCESS! Connected to MongoDB Atlas (${data.databaseName || 'bizpark_studio'}) via ${backendUrl} [Mode: ${data.environment || 'production'}]`);
         } else {
-          setCloudTestStatus(`⚠️ Backend connected at ${backendUrl}, but MongoDB status is: ${data.database}`);
+          setCloudTestStatus(`⚠️ Backend connected at ${backendUrl}, but MongoDB status is: ${data.database}. ${data.lastError ? `(Error: ${data.lastError})` : ''}`);
         }
       } else {
         setCloudTestStatus(`❌ Backend responded with HTTP status ${res.status}`);
       }
     } catch (err) {
-      setCloudTestStatus(`❌ Connection failed to ${backendUrl}: ${err.message}. If your frontend is hosted, enter your live backend URL below.`);
+      setCloudTestStatus(`❌ Connection failed to ${backendUrl}: ${err.message}. If your frontend is hosted, verify that backend is deployed or enter your live backend URL below.`);
     } finally {
       setIsTestingCloud(false);
     }
@@ -148,13 +149,15 @@ export default function AdminPanel() {
     sessionStorage.removeItem('bizpark_admin_authed');
   };
 
-  // FILE UPLOAD HELPER — uploads to server /api/upload-image, falls back to base64
+  // FILE UPLOAD HELPER — automatically compresses images and uploads to server /api/upload-image, falls back to optimized base64
   const handleFileUpload = async (file, callback) => {
     if (!file) return;
     try {
+      triggerSaveNotification('⚡ Optimizing image resolution...');
+      const optimizedFile = await compressImage(file);
       const backendUrl = getBackendUrl();
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', optimizedFile);
       const res = await fetch(`${backendUrl}/api/upload-image`, {
         method: 'POST',
         body: formData
@@ -163,26 +166,35 @@ export default function AdminPanel() {
         const data = await res.json();
         if (data.url) {
           // If backend is on a different domain, format full URL
-          const resolvedUrl = data.url.startsWith('http')
+          const resolvedUrl = data.url.startsWith('http') || data.url.startsWith('data:')
             ? data.url
-            : backendUrl && !backendUrl.includes('localhost:5001') && backendUrl.startsWith('http')
+            : backendUrl && !backendUrl.includes('localhost') && backendUrl.startsWith('http')
             ? `${backendUrl}${data.url}`
             : data.url;
           callback(resolvedUrl);
-          triggerSaveNotification('✓ Image uploaded to server successfully!');
+          triggerSaveNotification('✓ Image optimized & uploaded successfully!');
           return;
         }
       }
     } catch {
-      // fall through to base64 fallback
+      // fall through to base64 fallback with optimized image
     }
-    // Fallback: convert to base64 data URL if server unreachable
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      callback(e.target.result);
-      triggerSaveNotification('Image uploaded (local preview mode).');
-    };
-    reader.readAsDataURL(file);
+    // Fallback: convert optimized image to base64 data URL
+    try {
+      const optimizedFile = await compressImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        callback(e.target.result);
+        triggerSaveNotification('✓ Image optimized & loaded into preview!');
+      };
+      reader.readAsDataURL(optimizedFile);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        callback(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // CATEGORY PROJECT FORM HANDLERS (UNIFIED SOFTWARE & PROJECTS)
