@@ -38,8 +38,8 @@ export default function Services() {
       ],
     },
     {
-      num: '03 / DSGN',
-      title: 'Graphic Design',
+      num: '03 / BRND',
+      title: 'Branding',
       description: 'Brand identity and the visual system that ties your product, feed, and print together.',
       icon: (
         <svg className="w-11 h-11 mb-7" viewBox="0 0 46 46" fill="none">

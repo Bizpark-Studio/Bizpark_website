@@ -39,7 +39,8 @@ const siteDataSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    strict: false
   }
 );
 

@@ -573,43 +573,104 @@ export function getStoreData() {
   };
 }
 
-// Background MongoDB sync helper
-const BACKEND_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL !== undefined)
-  ? import.meta.env.VITE_BACKEND_URL
-  : (typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '' : 'http://localhost:5001');
+// Dynamic Backend URL Resolver (supports local dev, custom live backend, runtime-config, and same-origin hosting)
+export function getBackendUrl() {
+  if (typeof window !== 'undefined' && window.location) {
+    const isRemoteHost = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
+    // 1. Manually configured backend URL saved from Admin Panel Settings
+    const custom = localStorage.getItem('bizpark_backend_url');
+    if (custom && custom.trim()) {
+      const trimmed = custom.trim().replace(/\/+$/, '');
+      // If hosted remotely and custom points to localhost, safely ignore it to prevent breakage
+      if (!isRemoteHost || (!trimmed.includes('localhost') && !trimmed.includes('127.0.0.1'))) {
+        return trimmed;
+      }
+    }
+
+    // 2. Global runtime config loaded from /runtime-config.json
+    if (window.__BIZPARK_BACKEND_URL__ && window.__BIZPARK_BACKEND_URL__.trim()) {
+      const runtimeUrl = window.__BIZPARK_BACKEND_URL__.trim().replace(/\/+$/, '');
+      if (!isRemoteHost || (!runtimeUrl.includes('localhost') && !runtimeUrl.includes('127.0.0.1'))) {
+        return runtimeUrl;
+      }
+    }
+
+    // 3. If hosted on a remote domain in production (e.g. Vercel, Netlify, Render, VPS, or reverse proxy)
+    // ALWAYS prioritize same-origin over baked-in localhost Vite variables
+    if (isRemoteHost) {
+      const viteEnvUrl = typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL;
+      if (viteEnvUrl && !viteEnvUrl.includes('localhost') && !viteEnvUrl.includes('127.0.0.1')) {
+        return viteEnvUrl.replace(/\/+$/, '');
+      }
+      return window.location.origin;
+    }
+  }
+
+  // 4. Build-time Vite environment variable for local development
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_BACKEND_URL) {
+    return import.meta.env.VITE_BACKEND_URL.replace(/\/+$/, '');
+  }
+
+  // 5. Default for local development
+  return 'http://localhost:5001';
+}
+
+export const BACKEND_URL = getBackendUrl();
 
 export async function syncFromBackend() {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/data`);
+    // Check runtime-config.json if not already loaded and no custom URL configured
+    if (typeof window !== 'undefined' && !localStorage.getItem('bizpark_backend_url') && !window.__BIZPARK_BACKEND_URL__) {
+      try {
+        const cfgRes = await fetch('/runtime-config.json');
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          if (cfg && cfg.backendUrl && cfg.backendUrl.trim()) {
+            window.__BIZPARK_BACKEND_URL__ = cfg.backendUrl.trim();
+          }
+        }
+      } catch {
+        // Silent ignore if runtime-config.json is absent or fails
+      }
+    }
+
+    const backendUrl = getBackendUrl();
+    const res = await fetch(`${backendUrl}/api/data`);
     if (res.ok) {
       const remoteData = await res.json();
       if (remoteData && remoteData.categories && remoteData.categories.length > 0) {
         const local = getStoreData();
 
-        // Only overwrite if remote data is newer OR there's no local data stored yet
-        const hasLocalData = !!localStorage.getItem(STORAGE_KEY);
-        const remoteTs = remoteData.updatedAt ? new Date(remoteData.updatedAt).getTime() : 0;
-        const localTs = local._savedAt ? new Date(local._savedAt).getTime() : 0;
+        // MongoDB is the single source of truth for all live website visitors!
+        const merged = {
+          ...local,
+          categories: remoteData.categories,
+          homepageHeroBanners: remoteData.homepageHeroBanners || local.homepageHeroBanners,
+          softwareBanners: remoteData.softwareBanners || local.softwareBanners,
+          softwareProducts: remoteData.softwareProducts || local.softwareProducts,
+          teamMembers: remoteData.teamMembers || local.teamMembers || initialTeamMembers,
+          settings: {
+            ...local.settings,
+            ...(remoteData.settings || {})
+          },
+          _savedAt: remoteData.updatedAt || new Date().toISOString()
+        };
 
-        // Use remote only if: no local data, or remote is definitively newer
-        if (!hasLocalData || (remoteTs > 0 && remoteTs > localTs)) {
-          const merged = {
-            ...local,
-            categories: remoteData.categories,
-            homepageHeroBanners: remoteData.homepageHeroBanners || local.homepageHeroBanners,
-            softwareBanners: remoteData.softwareBanners || local.softwareBanners,
-            softwareProducts: remoteData.softwareProducts || local.softwareProducts,
-            teamMembers: remoteData.teamMembers || local.teamMembers || initialTeamMembers,
-            settings: remoteData.settings || local.settings
-          };
+        try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          window.dispatchEvent(new Event('bizpark_store_updated'));
+        } catch (storageErr) {
+          console.warn('LocalStorage save skipped (quota limit):', storageErr.message);
         }
+
+        window.dispatchEvent(new Event('bizpark_store_updated'));
+        return { success: true, data: merged };
       }
     }
-  } catch {
-    // Graceful offline fallback: continue with local cache
+  } catch (err) {
+    console.warn('Backend sync failed, using cached store data:', err.message);
   }
+  return { success: false, data: getStoreData() };
 }
 
 // Automatically initiate background sync on module load
@@ -617,28 +678,57 @@ if (typeof window !== 'undefined') {
   syncFromBackend();
 }
 
-export function saveStoreData(data) {
-  try {
-    // ALWAYS force softwareProducts array to be identical to software-solutions category projects!
-    const softwareCat = data.categories && data.categories.find((c) => c.key === 'software-solutions');
-    if (softwareCat && softwareCat.projects) {
-      data.softwareProducts = softwareCat.projects;
-    }
-    // Stamp save time for sync comparison
-    data._savedAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    window.dispatchEvent(new Event('bizpark_store_updated'));
+export async function saveStoreData(data) {
+  // 1. Force softwareProducts array to be identical to software-solutions category projects
+  const softwareCat = data.categories && data.categories.find((c) => c.key === 'software-solutions');
+  if (softwareCat && softwareCat.projects) {
+    data.softwareProducts = softwareCat.projects;
+  }
+  data._savedAt = new Date().toISOString();
 
-    // Asynchronously dispatch update to Express MongoDB Backend
-    fetch(`${BACKEND_URL}/api/data`, {
+  // 2. Safely update localStorage without throwing quota errors
+  let localSaved = false;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localSaved = true;
+  } catch (storageErr) {
+    console.warn('LocalStorage save skipped (storage quota):', storageErr.message);
+  }
+
+  // 3. Dispatch store update event immediately for local React components
+  window.dispatchEvent(new Event('bizpark_store_updated'));
+
+  // 4. Send update to MongoDB Atlas via Express Backend API
+  const backendUrl = getBackendUrl();
+  try {
+    const res = await fetch(`${backendUrl}/api/data`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
-    }).catch(() => {
-      // Offline fallback: data is already safely stored in local browser cache
     });
-  } catch (e) {
-    console.error('Error saving store data to localStorage', e);
+
+    if (res.ok) {
+      const resultJson = await res.json();
+      console.log('✓ Successfully saved site data to MongoDB Atlas cloud database');
+      return { success: true, remoteSaved: true, localSaved, data: resultJson };
+    } else {
+      const errText = await res.text().catch(() => '');
+      console.error(`Backend error (${res.status}):`, errText);
+      return {
+        success: true,
+        remoteSaved: false,
+        localSaved,
+        remoteError: `Server error ${res.status}: ${errText || res.statusText}`
+      };
+    }
+  } catch (networkErr) {
+    console.error('Failed to connect to backend at ' + backendUrl, networkErr);
+    return {
+      success: true,
+      remoteSaved: false,
+      localSaved,
+      remoteError: `Cannot reach backend API at ${backendUrl} (${networkErr.message}). Check Backend URL in Settings!`
+    };
   }
 }
 
@@ -660,7 +750,7 @@ export function deleteInquiry(id) {
   data.inquiries = (data.inquiries || []).filter((inq) => inq.id !== id);
   saveStoreData(data);
 
-  fetch(`${BACKEND_URL}/api/inquiries/${id}`, {
+  fetch(`${getBackendUrl()}/api/inquiries/${id}`, {
     method: 'DELETE'
   }).catch(() => {});
 
@@ -672,7 +762,7 @@ export function clearAllInquiries() {
   data.inquiries = [];
   saveStoreData(data);
 
-  fetch(`${BACKEND_URL}/api/inquiries`, {
+  fetch(`${getBackendUrl()}/api/inquiries`, {
     method: 'DELETE'
   }).catch(() => {});
 
