@@ -20,7 +20,18 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
-      if (hash.startsWith('#project-')) {
+      if (
+        hash.startsWith('#software-') ||
+        hash.startsWith('#project-contact') ||
+        hash === '#software-projects-grid'
+      ) {
+        // In-page section anchor: smooth scroll without resetting page!
+        const targetId = hash.slice(1);
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else if (hash.startsWith('#project-')) {
         const id = hash.replace('#project-', '');
         setRoute({ page: 'project', id });
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -41,17 +52,6 @@ export default function App() {
       } else if (hash.startsWith('#admin')) {
         setRoute({ page: 'admin', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (
-        hash.startsWith('#software-') ||
-        hash.startsWith('#project-contact') ||
-        hash === '#software-projects-grid'
-      ) {
-        // In-page section anchor: smooth scroll without resetting page!
-        const targetId = hash.slice(1);
-        const element = document.getElementById(targetId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
       } else {
         setRoute({ page: 'home', id: null });
         if (hash) {
