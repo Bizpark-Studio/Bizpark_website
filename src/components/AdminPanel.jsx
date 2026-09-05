@@ -32,6 +32,8 @@ export default function AdminPanel() {
       phone: '0783157736',
       address: 'Colombo, Sri Lanka',
       web3formsKey: '68a920d3-df9e-456d-84d8-feb25b489cd5',
+      adminUsername: 'admin',
+      adminPassword: 'bizpark123',
       backendUrl: storedBackend || '',
       ...(data.settings || {})
     };
@@ -85,7 +87,10 @@ export default function AdminPanel() {
     // 3. Fetch latest inquiries from MongoDB
     fetchInquiries();
 
-    return () => window.removeEventListener('bizpark_store_updated', handleUpdate);
+    return () => {
+      window.removeEventListener('bizpark_store_updated', handleUpdate);
+      sessionStorage.removeItem('bizpark_admin_authed');
+    };
   }, []);
 
   useEffect(() => {
@@ -179,18 +184,32 @@ export default function AdminPanel() {
   // LOGIN HANDLER
   const handleLoginSubmit = (e) => {
     e.preventDefault();
-    if (loginCreds.username.trim() === 'admin' && loginCreds.password === 'bizpark123') {
+    setLoginError('');
+
+    const inputUser = (loginCreds.username || '').trim().toLowerCase();
+    const inputPass = (loginCreds.password || '').trim();
+
+    const expectedUser = (storeData.settings?.adminUsername || 'admin').trim().toLowerCase();
+    const expectedPass = (storeData.settings?.adminPassword || 'bizpark123').trim();
+
+    if (inputUser === expectedUser && inputPass === expectedPass) {
       setIsAuthenticated(true);
       sessionStorage.setItem('bizpark_admin_authed', 'true');
       setLoginError('');
+      if (window.location.hash !== '#admin') {
+        window.location.hash = '#admin';
+      }
     } else {
-      setLoginError('Invalid Username or Password. (Default: admin / bizpark123)');
+      setLoginError('Invalid administrator credentials. Access denied.');
     }
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('bizpark_admin_authed');
+    setLoginCreds({ username: '', password: '' });
+    setLoginError('');
+    window.location.hash = '#home';
   };
 
   // FILE UPLOAD HELPER — automatically compresses images and uploads to server /api/upload-image, falls back to optimized base64
@@ -475,14 +494,14 @@ export default function AdminPanel() {
 
             <button
               type="submit"
-              className="w-full bg-[#f2603e] text-black font-chakra font-bold text-sm uppercase tracking-wider py-3.5 cut-sm hover:bg-[#ff6f4a] transition-all shadow-lg"
+              className="w-full bg-[#f2603e] text-black font-chakra font-bold text-sm uppercase tracking-wider py-3.5 cut-sm hover:bg-[#ff6f4a] transition-all shadow-lg cursor-pointer"
             >
               Authenticate &amp; Enter Dashboard →
             </button>
           </form>
 
           <p className="text-[11px] font-mono text-[#605e58] text-center pt-2">
-            Default credentials: <span className="text-white">admin</span> / <span className="text-white">bizpark123</span>
+            Restricted Administrative System • All access attempts are logged
           </p>
         </div>
       </div>
@@ -2302,6 +2321,47 @@ export default function AdminPanel() {
                   <span className="text-[11px] text-[#605e58] font-mono mt-1 block">
                     Studio address shown on the Contact page and official communications.
                   </span>
+                </div>
+              </div>
+
+              {/* Admin Gateway Access Credentials */}
+              <div className="bg-[#0a0a0a] border border-[#f2603e]/40 p-5 cut-sm space-y-4 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f2603e]" />
+                  <span className="font-mono text-xs text-[#f2603e] font-bold uppercase tracking-wider">
+                    Admin Portal Login Credentials
+                  </span>
+                </div>
+                <p className="text-xs text-[#95928a] font-mono">
+                  Customize the username and password required to enter this Content Management Gateway.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-1">
+                      Gateway Username
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsState.adminUsername || ''}
+                      onChange={(e) => setSettingsState({ ...settingsState, adminUsername: e.target.value })}
+                      placeholder="admin"
+                      className="w-full bg-[#141413] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-mono text-xs text-[#95928a] uppercase mb-1">
+                      Gateway Password
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={settingsState.adminPassword || ''}
+                      onChange={(e) => setSettingsState({ ...settingsState, adminPassword: e.target.value })}
+                      placeholder="bizpark123"
+                      className="w-full bg-[#141413] border border-white/10 focus:border-[#f2603e] p-3 text-xs font-mono text-white outline-none cut-sm"
+                    />
+                  </div>
                 </div>
               </div>
 

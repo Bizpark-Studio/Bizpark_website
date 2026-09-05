@@ -38,7 +38,7 @@ export default function App() {
       } else if (hash === '#about') {
         setRoute({ page: 'about', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash === '#admin') {
+      } else if (hash.startsWith('#admin')) {
         setRoute({ page: 'admin', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
       } else if (
