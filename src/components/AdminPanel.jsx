@@ -566,32 +566,41 @@ export default function AdminPanel() {
     });
   };
 
-  const handleSaveTeamMember = (e) => {
+  const handleSaveTeamMember = async (e) => {
     e.preventDefault();
     if (!editingTeamMember.name.trim()) return;
     const currentMembers = storeData.teamMembers || [];
-    const exists = currentMembers.some((m) => m.id === editingTeamMember.id);
+    const sanitizedMember = {
+      ...editingTeamMember,
+      name: editingTeamMember.name.trim(),
+      role: (editingTeamMember.role || 'Studio Specialist').trim(),
+      image: (editingTeamMember.image || '/images/hero.png').trim(),
+      bio: (editingTeamMember.bio || '').trim(),
+      email: (editingTeamMember.email || 'bizparkstudio@gmail.com').trim(),
+      phone: (editingTeamMember.phone || '+94 72 954 5538').trim()
+    };
+    const exists = currentMembers.some((m) => m.id === sanitizedMember.id);
     const updatedMembers = exists
-      ? currentMembers.map((m) => (m.id === editingTeamMember.id ? editingTeamMember : m))
-      : [...currentMembers, editingTeamMember];
+      ? currentMembers.map((m) => (m.id === sanitizedMember.id ? sanitizedMember : m))
+      : [...currentMembers, sanitizedMember];
 
     const updated = {
       ...storeData,
       teamMembers: updatedMembers
     };
-    handleSaveAll(updated);
     setEditingTeamMember(null);
+    await handleSaveAll(updated);
     triggerSaveNotification('✓ Team member saved & published to About page!');
   };
 
-  const handleDeleteTeamMember = (id) => {
+  const handleDeleteTeamMember = async (id) => {
     if (window.confirm('Are you sure you want to remove this team member from the About page?')) {
       const updatedMembers = (storeData.teamMembers || []).filter((m) => m.id !== id);
       const updated = {
         ...storeData,
         teamMembers: updatedMembers
       };
-      handleSaveAll(updated);
+      await handleSaveAll(updated);
       triggerSaveNotification('Team member removed.');
     }
   };

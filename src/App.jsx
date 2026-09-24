@@ -120,15 +120,9 @@ export default function App() {
 
   useEffect(() => {
     const handleLocationChange = () => {
-      const pathname = window.location.pathname.replace(/\/$/, '') || '/';
-      if (pathname === '/about' || pathname === '/contact' || pathname === '/products') {
-        const page = pathname.slice(1);
-        setRoute(page === 'products' ? { page: 'category', id: 'software-solutions' } : { page, id: null });
-        window.scrollTo({ top: 0, behavior: 'instant' });
-        return;
-      }
-
       const hash = window.location.hash;
+      const pathname = window.location.pathname.replace(/\/$/, '') || '/';
+
       if (
         hash.startsWith('#software-') ||
         hash.startsWith('#project-contact') ||
@@ -140,38 +134,77 @@ export default function App() {
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      } else if (hash.startsWith('#project-')) {
+        return;
+      }
+
+      if (hash.startsWith('#project-')) {
         const id = hash.replace('#project-', '');
         setRoute({ page: 'project', id });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash.startsWith('#product-')) {
+        return;
+      }
+
+      if (hash.startsWith('#product-')) {
         const id = hash.replace('#product-', '');
         setRoute({ page: 'product', id });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash.startsWith('#category-')) {
+        return;
+      }
+
+      if (hash.startsWith('#category-')) {
         const id = hash.replace('#category-', '');
         setRoute({ page: 'category', id });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash === '#contact') {
+        return;
+      }
+
+      if (hash === '#contact') {
         setRoute({ page: 'contact', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash === '#about') {
+        return;
+      }
+
+      if (hash === '#about') {
         setRoute({ page: 'about', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else if (hash.startsWith('#admin')) {
+        return;
+      }
+
+      if (hash.startsWith('#admin')) {
         setRoute({ page: 'admin', id: null });
         window.scrollTo({ top: 0, behavior: 'instant' });
-      } else {
+        return;
+      }
+
+      if (hash === '#work' || hash === '#services' || hash === '#process' || hash === '#requirement-form') {
         setRoute({ page: 'home', id: null });
-        if (hash) {
-          const targetId = hash.slice(1);
-          setTimeout(() => {
-            const element = document.getElementById(targetId);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth' });
-            }
-          }, 100);
-        }
+        const targetId = hash.slice(1);
+        setTimeout(() => {
+          const element = document.getElementById(targetId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+        return;
+      }
+
+      // Check pathname routes when no specific hash routing is present
+      if (pathname === '/about' || pathname === '/contact' || pathname === '/products') {
+        const page = pathname.slice(1);
+        setRoute(page === 'products' ? { page: 'category', id: 'software-solutions' } : { page, id: null });
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        return;
+      }
+
+      setRoute({ page: 'home', id: null });
+      if (hash) {
+        const targetId = hash.slice(1);
+        setTimeout(() => {
+          const element = document.getElementById(targetId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
       }
     };
 

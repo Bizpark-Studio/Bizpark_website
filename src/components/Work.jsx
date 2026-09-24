@@ -66,7 +66,7 @@ export default function Work() {
             return (
               <div
                 key={catGroup.key || catIdx}
-                className="group relative bg-[#141413] border border-white/10 overflow-hidden flex flex-col justify-between p-7 sm:p-8 cut transition-all duration-300 hover:border-[#f2603e]/60 shadow-xl min-h-[360px]"
+                className="group relative bg-[#141413] border border-white/10 overflow-hidden flex flex-col justify-between p-7 sm:p-8 cut transition-all duration-300 hover:border-[#f2603e]/60 shadow-xl min-h-[415px] sm:min-h-[435px]"
               >
                 {/* Auto Sliding Background Images Track */}
                 <div
@@ -101,7 +101,7 @@ export default function Work() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/85 via-45% to-transparent z-10 opacity-95 group-hover:opacity-90 transition-opacity" />
 
                 {/* Content details for active project slide */}
-                <div className="relative z-20 w-full pt-20">
+                <div className="relative z-20 w-full pt-24 sm:pt-28">
                   <div className="space-y-1 mb-6">
                     <h3 className="font-chakra text-2xl sm:text-3xl text-[#f5f4ef] uppercase tracking-wide group-hover:text-[#f2603e] transition-colors duration-200 font-bold">
                       {currentProject?.name}
