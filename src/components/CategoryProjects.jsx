@@ -186,81 +186,96 @@ export default function CategoryProjects({ categoryKey }) {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredProjects.map((proj) => (
-              <div
-                key={proj.id}
-                className="group bg-[#141413] border border-white/10 hover:border-[#f2603e]/60 transition-all duration-300 cut flex flex-col justify-between overflow-hidden shadow-xl"
-              >
-                <div>
-                  {/* Image Preview with Sub-tag badge */}
-                  <div className="relative aspect-[16/10] overflow-hidden bg-black/60 border-b border-white/10">
-                    <img
-                      src={proj.image}
-                      alt={proj.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#141413] via-transparent to-transparent opacity-60" />
-                    
-                    {proj.subTag && (
-                      <span className="absolute top-4 left-4 font-mono text-[10px] text-[#f2603e] bg-[#0a0a0a]/90 backdrop-blur-md px-3 py-1 border border-[#f2603e]/40 font-bold uppercase tracking-wider">
-                        {proj.subTag}
-                      </span>
-                    )}
+            {filteredProjects.map((proj) => {
+              const projectLink = `#project-${proj.id}`;
+              const handleNavigate = (e) => {
+                e.preventDefault();
+                window.location.hash = projectLink;
+              };
 
-                    {proj.processImages && proj.processImages.length > 0 && (
-                      <span className="absolute top-4 right-4 font-mono text-[9px] text-[#f5f4ef] bg-black/80 backdrop-blur-md px-2.5 py-1 border border-white/20 cut-sm">
-                        📸 {proj.processImages.length} Process Photos
+              return (
+                <div
+                  key={proj.id}
+                  className="group bg-[#141413] border border-white/10 hover:border-[#f2603e]/60 transition-all duration-300 cut flex flex-col justify-between overflow-hidden shadow-xl"
+                >
+                  <div>
+                    {/* Image Preview with Sub-tag badge */}
+                    <a
+                      href={projectLink}
+                      onClick={handleNavigate}
+                      className="block relative aspect-[16/10] overflow-hidden bg-black/60 border-b border-white/10 cursor-pointer"
+                    >
+                      <img
+                        src={proj.image}
+                        alt={proj.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80 group-hover:opacity-100"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#141413] via-transparent to-transparent opacity-60" />
+                      
+                      {proj.subTag && (
+                        <span className="absolute top-4 left-4 font-mono text-[10px] text-[#f2603e] bg-[#0a0a0a]/90 backdrop-blur-md px-3 py-1 border border-[#f2603e]/40 font-bold uppercase tracking-wider">
+                          {proj.subTag}
+                        </span>
+                      )}
+
+                      {proj.processImages && proj.processImages.length > 0 && (
+                        <span className="absolute top-4 right-4 font-mono text-[9px] text-[#f5f4ef] bg-black/80 backdrop-blur-md px-2.5 py-1 border border-white/20 cut-sm">
+                          📸 {proj.processImages.length} Process Photos
+                        </span>
+                      )}
+                    </a>
+
+                    {/* Card Main Info */}
+                    <div className="p-6 space-y-3">
+                      <span className="font-mono text-[11px] text-[#95928a] block">
+                        Client: <span className="text-[#f5f4ef]">{proj.client}</span>
                       </span>
-                    )}
+
+                      <h3 className="font-chakra text-2xl text-white uppercase font-bold group-hover:text-[#f2603e] transition-colors">
+                        <a href={projectLink} onClick={handleNavigate} className="hover:text-[#f2603e] transition-colors">
+                          {proj.name}
+                        </a>
+                      </h3>
+
+                      <p className="text-xs text-[#95928a] leading-relaxed line-clamp-3">
+                        {proj.description}
+                      </p>
+
+                      {/* Features list */}
+                      {proj.features && proj.features.length > 0 && (
+                        <div className="pt-2">
+                          <ul className="space-y-1 text-[11px] font-mono text-[#605e58]">
+                            {proj.features.slice(0, 2).map((feat, idx) => (
+                              <li key={idx} className="flex items-center gap-2">
+                                <span className="w-1 h-1 bg-[#f2603e]" />
+                                {feat}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Card Main Info */}
-                  <div className="p-6 space-y-3">
-                    <span className="font-mono text-[11px] text-[#95928a] block">
-                      Client: <span className="text-[#f5f4ef]">{proj.client}</span>
-                    </span>
-
-                    <h3 className="font-chakra text-2xl text-white uppercase font-bold group-hover:text-[#f2603e] transition-colors">
-                      {proj.name}
-                    </h3>
-
-                    <p className="text-xs text-[#95928a] leading-relaxed line-clamp-3">
-                      {proj.description}
-                    </p>
-
-                    {/* Features list */}
-                    {proj.features && proj.features.length > 0 && (
-                      <div className="pt-2">
-                        <ul className="space-y-1 text-[11px] font-mono text-[#605e58]">
-                          {proj.features.slice(0, 2).map((feat, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <span className="w-1 h-1 bg-[#f2603e]" />
-                              {feat}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                  {/* Card Action Link */}
+                  <div className="p-6 pt-0">
+                    <a
+                      href={projectLink}
+                      onClick={handleNavigate}
+                      className="w-full inline-flex items-center justify-between font-mono text-xs text-[#f2603e] bg-black/40 hover:bg-[#f2603e] hover:text-black border border-[#f2603e]/40 hover:border-transparent px-4 py-3 transition-all duration-200 cut-sm font-semibold uppercase tracking-wider cursor-pointer"
+                    >
+                      <span>
+                        {categoryKey === 'software-solutions'
+                          ? 'Explore Software & Trial Download'
+                          : 'View Project & Process Photos'}
+                      </span>
+                      <span>→</span>
+                    </a>
                   </div>
-                </div>
 
-                {/* Card Action Link */}
-                <div className="p-6 pt-0">
-                  <a
-                    href={`#project-${proj.id}`}
-                    className="w-full inline-flex items-center justify-between font-mono text-xs text-[#f2603e] bg-black/40 hover:bg-[#f2603e] hover:text-black border border-[#f2603e]/40 hover:border-transparent px-4 py-3 transition-all duration-200 cut-sm font-semibold uppercase tracking-wider"
-                  >
-                    <span>
-                      {categoryKey === 'software-solutions'
-                        ? 'Explore Software & Trial Download'
-                        : 'View Project & Process Photos'}
-                    </span>
-                    <span>→</span>
-                  </a>
                 </div>
-
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

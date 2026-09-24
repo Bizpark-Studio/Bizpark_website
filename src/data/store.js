@@ -544,7 +544,29 @@ export function getStoreData() {
         }
         // DO NOT force-inject initialTeamMembers — respect user's saved data even if empty
         if (parsed.teamMembers === undefined || parsed.teamMembers === null) {
-          parsed.teamMembers = initialTeamMembers;
+          try {
+            const backup = localStorage.getItem('bizpark_team_members_backup');
+            parsed.teamMembers = backup ? JSON.parse(backup) : initialTeamMembers;
+          } catch {
+            parsed.teamMembers = initialTeamMembers;
+          }
+        } else {
+          // If parsed has team members, verify if backup has extra members added by user
+          try {
+            const backup = localStorage.getItem('bizpark_team_members_backup');
+            if (backup) {
+              const backupList = JSON.parse(backup);
+              if (Array.isArray(backupList)) {
+                const existingIds = new Set(parsed.teamMembers.map((m) => m.id));
+                backupList.forEach((bm) => {
+                  if (bm && bm.id && !existingIds.has(bm.id)) {
+                    parsed.teamMembers.push(bm);
+                    existingIds.add(bm.id);
+                  }
+                });
+              }
+            }
+          } catch {}
         }
         if (!parsed.settings) {
           parsed.settings = initialSettings;
@@ -643,7 +665,7 @@ export function getBackendUrl() {
   }
 
   // 5. Default for local development
-  return 'http://localhost:5001';
+  return typeof window !== 'undefined' && window.location.port === '5173' ? '' : 'http://localhost:5001';
 }
 
 export const BACKEND_URL = getBackendUrl();
@@ -690,6 +712,38 @@ export async function syncFromBackend() {
 
     const local = getStoreData();
 
+    // Robust team member merge:
+    // Take remote team members if available, but preserve any members created locally or saved in backup
+    let mergedTeamMembers = Array.isArray(remoteData.teamMembers) && remoteData.teamMembers.length > 0
+      ? [...remoteData.teamMembers]
+      : (Array.isArray(local.teamMembers) && local.teamMembers.length > 0 ? [...local.teamMembers] : [...initialTeamMembers]);
+
+    if (Array.isArray(local.teamMembers)) {
+      const existingIds = new Set(mergedTeamMembers.map((m) => m.id));
+      local.teamMembers.forEach((lm) => {
+        if (lm && lm.id && !existingIds.has(lm.id)) {
+          mergedTeamMembers.push(lm);
+          existingIds.add(lm.id);
+        }
+      });
+    }
+
+    try {
+      const backup = localStorage.getItem('bizpark_team_members_backup');
+      if (backup) {
+        const backupList = JSON.parse(backup);
+        if (Array.isArray(backupList)) {
+          const existingIds = new Set(mergedTeamMembers.map((m) => m.id));
+          backupList.forEach((bm) => {
+            if (bm && bm.id && !existingIds.has(bm.id)) {
+              mergedTeamMembers.push(bm);
+              existingIds.add(bm.id);
+            }
+          });
+        }
+      }
+    } catch {}
+
     // MongoDB Atlas is the single source of truth for all live website content.
     // Only use remote data for fields that are actually present in the response.
     const merged = {
@@ -698,7 +752,7 @@ export async function syncFromBackend() {
       homepageHeroBanners: Array.isArray(remoteData.homepageHeroBanners) ? remoteData.homepageHeroBanners : local.homepageHeroBanners,
       softwareBanners: Array.isArray(remoteData.softwareBanners) ? remoteData.softwareBanners : local.softwareBanners,
       softwareProducts: Array.isArray(remoteData.softwareProducts) ? remoteData.softwareProducts : local.softwareProducts,
-      teamMembers: Array.isArray(remoteData.teamMembers) ? remoteData.teamMembers : local.teamMembers,
+      teamMembers: mergedTeamMembers,
       settings: {
         ...local.settings,
         ...(remoteData.settings || {})
@@ -715,6 +769,11 @@ export async function syncFromBackend() {
     } catch (storageErr) {
       console.warn('LocalStorage save skipped (quota limit):', storageErr.message);
     }
+
+    // Always update backup key too
+    try {
+      localStorage.setItem('bizpark_team_members_backup', JSON.stringify(mergedTeamMembers));
+    } catch {}
 
     window.dispatchEvent(new Event('bizpark_store_updated'));
     return { success: true, data: merged };
@@ -738,6 +797,15 @@ export async function saveStoreData(data) {
 
   // Update in-memory active cache immediately
   memoryStoreData = data;
+
+  // Always save a dedicated backup of team members to guarantee survival across syncs and storage limits
+  if (Array.isArray(data.teamMembers) && data.teamMembers.length > 0) {
+    try {
+      localStorage.setItem('bizpark_team_members_backup', JSON.stringify(data.teamMembers));
+    } catch (e) {
+      console.warn('Backup team save skipped:', e.message);
+    }
+  }
 
   // 2. Safely update localStorage without throwing quota errors
   let localSaved = false;

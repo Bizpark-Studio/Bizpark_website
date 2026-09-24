@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getStoreData } from '../data/store';
+import { getStoreData, syncFromBackend } from '../data/store';
 
 export default function AboutPage() {
   const [storeData, setStoreData] = useState(getStoreData());
@@ -10,6 +10,14 @@ export default function AboutPage() {
     window.scrollTo(0, 0);
     const handleUpdate = () => setStoreData(getStoreData());
     window.addEventListener('bizpark_store_updated', handleUpdate);
+
+    // Live sync from cloud / local storage
+    syncFromBackend().then((res) => {
+      if (res && res.success && res.data) {
+        setStoreData(res.data);
+      }
+    });
+
     return () => window.removeEventListener('bizpark_store_updated', handleUpdate);
   }, []);
 
